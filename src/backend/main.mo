@@ -10,7 +10,9 @@ import Float "mo:base/Float";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor Backend {
   let storage = Storage.new();
   include MixinStorage(storage);
@@ -165,6 +167,9 @@ actor Backend {
   // Required AccessControl functions
   public shared ({ caller }) func initializeAccessControl() : async () {
     AccessControl.initialize(accessControlState, caller);
+    // Note: To assign admin roles to specific principals (jonysued1@hotmail.com and jonatan@rimonim.com.ar),
+    // you must first obtain their actual Principal IDs through Internet Identity authentication,
+    // then call setUserRole() with those principals and #admin role.
   };
 
   public query ({ caller }) func getCallerUserRole() : async AccessControl.UserRole {
@@ -196,7 +201,7 @@ actor Backend {
     userProfiles := principalMap.put(userProfiles, caller, profile);
   };
 
-  // Admin-only function to assign a role to a single user (required by specification)
+  // Admin-only function to assign a role to a user
   public shared ({ caller }) func assignCallerUserRole(user : Principal, role : AccessControl.UserRole) : async () {
     // Admin-only check is performed inside AccessControl.assignRole
     AccessControl.assignRole(accessControlState, caller, user, role);
@@ -314,7 +319,10 @@ actor Backend {
     };
   };
 
-  public query func obtenerEmpacadoresActivos() : async [Empacador] {
+  public query ({ caller }) func obtenerEmpacadoresActivos() : async [Empacador] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver empacadores");
+    };
     let todos = Iter.toArray(textMap.vals(empacadores));
     Array.filter<Empacador>(todos, func(empacador) { empacador.activo });
   };
@@ -401,7 +409,10 @@ actor Backend {
     };
   };
 
-  public query func obtenerControladoresActivos() : async [Controlador] {
+  public query ({ caller }) func obtenerControladoresActivos() : async [Controlador] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver controladores");
+    };
     let todos = Iter.toArray(textMap.vals(controladores));
     Array.filter<Controlador>(todos, func(controlador) { controlador.activo });
   };
@@ -485,21 +496,33 @@ actor Backend {
     };
   };
 
-  public query func obtenerProximoIdentificador() : async Text {
+  public query ({ caller }) func obtenerProximoIdentificador() : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden obtener identificadores");
+    };
     getCurrentTimeHHMMSSUTC3();
   };
 
-  public query func obtenerIdentificadoresParaConvertir() : async [(Text, Bool)] {
+  public query ({ caller }) func obtenerIdentificadoresParaConvertir() : async [(Text, Bool)] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden obtener identificadores");
+    };
     let todos = Iter.toArray(textMap.vals(controles));
     let identificadores = Array.map<ControlCalidad, (Text, Bool)>(todos, func(control) { (control.id, true) });
     identificadores;
   };
 
-  public query func obtenerControl(id : Text) : async ?ControlCalidad {
+  public query ({ caller }) func obtenerControl(id : Text) : async ?ControlCalidad {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver controles");
+    };
     textMap.get(controles, id);
   };
 
-  public query func obtenerControlesFiltrados(filtro : Filtro) : async [ControlCalidadConControlador] {
+  public query ({ caller }) func obtenerControlesFiltrados(filtro : Filtro) : async [ControlCalidadConControlador] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver controles");
+    };
     let todos = Iter.toArray(textMap.vals(controles));
     let filtrados = Array.filter<ControlCalidad>(
       todos,
@@ -555,7 +578,10 @@ actor Backend {
     );
   };
 
-  public query func obtenerHistorial() : async [ControlCalidadConControlador] {
+  public query ({ caller }) func obtenerHistorial() : async [ControlCalidadConControlador] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver el historial");
+    };
     let todos = Iter.toArray(textMap.vals(controles));
     Array.map<ControlCalidad, ControlCalidadConControlador>(
       todos,
@@ -575,7 +601,10 @@ actor Backend {
     );
   };
 
-  public query func obtenerReporteDiario(fecha : Int) : async ?ReporteDiarioConControlador {
+  public query ({ caller }) func obtenerReporteDiario(fecha : Int) : async ?ReporteDiarioConControlador {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver reportes");
+    };
     let controlesDia = Array.filter<ControlCalidad>(
       Iter.toArray(textMap.vals(controles)),
       func(control) { control.fecha == fecha },
@@ -690,7 +719,10 @@ actor Backend {
     };
   };
 
-  public query func obtenerReporteRango(fechaInicio : Int, fechaFin : Int) : async ?ReporteRangoConControlador {
+  public query ({ caller }) func obtenerReporteRango(fechaInicio : Int, fechaFin : Int) : async ?ReporteRangoConControlador {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver reportes");
+    };
     let controlesRango = Array.filter<ControlCalidad>(
       Iter.toArray(textMap.vals(controles)),
       func(control) { control.fecha >= fechaInicio and control.fecha <= fechaFin },
@@ -806,7 +838,10 @@ actor Backend {
     };
   };
 
-  public query func obtenerReportesPorRango(fechaInicio : Int, fechaFin : Int) : async [ReporteDiarioConControlador] {
+  public query ({ caller }) func obtenerReportesPorRango(fechaInicio : Int, fechaFin : Int) : async [ReporteDiarioConControlador] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver reportes");
+    };
     let controlesRango = Array.filter<ControlCalidad>(
       Iter.toArray(textMap.vals(controles)),
       func(control) { control.fecha >= fechaInicio and control.fecha <= fechaFin },
@@ -932,7 +967,10 @@ actor Backend {
     );
   };
 
-  public query func obtenerMuestrasParaPlanilla(fechaInicio : Int, fechaFin : Int) : async [MuestraPlanilla] {
+  public query ({ caller }) func obtenerMuestrasParaPlanilla(fechaInicio : Int, fechaFin : Int) : async [MuestraPlanilla] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver muestras");
+    };
     let controlesFiltrados = Array.filter<ControlCalidad>(
       Iter.toArray(textMap.vals(controles)),
       func(control) { control.fecha >= fechaInicio and control.fecha <= fechaFin },
@@ -980,7 +1018,10 @@ actor Backend {
     );
   };
 
-  public query func obtenerDetalleMuestra(id : Text) : async ?MuestraPlanilla {
+  public query ({ caller }) func obtenerDetalleMuestra(id : Text) : async ?MuestraPlanilla {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Debug.trap("No autorizado: Solo usuarios pueden ver detalles de muestras");
+    };
     switch (textMap.get(controles, id)) {
       case (null) { null };
       case (?control) {
@@ -1021,5 +1062,32 @@ actor Backend {
         };
       };
     };
+  };
+
+  // Function to get all users with their roles - Admin only
+  public query ({ caller }) func getAllUserRoles() : async [UserWithRole] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Debug.trap("No autorizado: Solo administradores pueden ver roles de usuarios");
+    };
+
+    let allUserPrincipals = Iter.toArray(principalMap.keys(userProfiles));
+    Array.map<Principal, UserWithRole>(
+      allUserPrincipals,
+      func(p) {
+        let role = AccessControl.getUserRole(accessControlState, p);
+        let profile = principalMap.get(userProfiles, p);
+        {
+          principal = p;
+          profile;
+          role;
+        };
+      },
+    );
+  };
+
+  // Function to set user role - Admin only
+  public shared ({ caller }) func setUserRole(user : Principal, role : AccessControl.UserRole) : async () {
+    // Admin-only check is performed inside AccessControl.assignRole
+    AccessControl.assignRole(accessControlState, caller, user, role);
   };
 };

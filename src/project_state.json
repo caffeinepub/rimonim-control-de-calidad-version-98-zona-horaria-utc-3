@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 9,
+  "summary": "Web application with admin user role management system",
+  "architectural_notes": [],
+  "known_issues": [],
+  "isFixRequest": false,
+  "existing_features": [
+    {
+      "id": "feature-integrate-the-role-assignment-ui-with-the-existing-backend-role-management-system-using-the-getuserroles-and-setuserrole-methods-to-fetch-and-update-user-roles-by-principal-id",
+      "title": "Integrate the role assignment UI with the existing backend role management system, using the getUserRoles and setUserRole methods to fetch and update user roles by Principal ID",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Admin tab for assigning roles to users",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Add a new 'Roles' navigation tab in the header that is visible only to admin users, positioned alongside existing tabs (registro, reportes, historial, configuracion, usuarios)",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Create a role assignment interface that displays all registered users with their current roles and allows the admin to change each user's role using a dropdown or select control",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Add a 'Roles' navigation tab in the Header component that is visible only to users with admin role, positioned alongside existing tabs (registro, reportes, historial, configuracion, usuarios)",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Update the App component routing to include the 'roles' view and ensure it renders the RolesUsuarios page when the roles tab is selected",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Configure the backend to assign admin role to the principals associated with email addresses jonysued1@hotmail.com and jonatan@rimonim.com.ar. This should be done either through initialization logic or by providing the principal IDs for these email addresses so they can be set as administrators using the existing setUserRole method.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Rimonim Quality Control",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

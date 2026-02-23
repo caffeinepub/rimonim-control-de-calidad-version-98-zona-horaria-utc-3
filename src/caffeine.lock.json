@@ -6,9 +6,15 @@
   "components": {
     "blob-storage": "2.0.3",
     "camera": "1.0.0",
-    "authorization": "1.0.1"
+    "authorization": "1.0.1",
+    "core-infrastructure": "1.0.2",
+    "shadcn-ui": "1.0.0",
+    "build-template-react": "1.0.0",
+    "initial-app": "1.0.0",
+    "github-export-icp-cli": "1.0.0"
   },
-  "aiCoreVersion": "0.11.5",
+  "aiCoreVersion": "0.20.2",
   "failedMigrationVersion": "0.10.4",
-  "motokoVersion": "0.16.3-caffeine-4"
+  "motokoVersion": "0.16.3-caffeine-4",
+  "tags": []
 }

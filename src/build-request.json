@@ -1,0 +1,39 @@
+{
+  "kind": "build_request",
+  "title": "Set jonysued1@hotmail.com and jonatan@rimonim.com.ar as administrators",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-6",
+      "text": "Configure the backend to assign admin role to the principals associated with email addresses jonysued1@hotmail.com and jonatan@rimonim.com.ar. This should be done either through initialization logic or by providing the principal IDs for these email addresses so they can be set as administrators using the existing setUserRole method.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-user-final"
+        ],
+        "quotes": [
+          "colocar el email jonysued1@hotmail.com y jonatan@rimonim.com.ar como administrador"
+        ]
+      },
+      "acceptanceCriteria": [
+        "The principals corresponding to jonysued1@hotmail.com and jonatan@rimonim.com.ar have admin role assigned",
+        "These users can access all admin-only features including user management and role assignment",
+        "The role assignment persists across canister upgrades"
+      ]
+    }
+  ],
+  "constraints": [
+    "Use the existing role management system with getUserRoles and setUserRole methods",
+    "Do not modify the authentication mechanism (Internet Identity)",
+    "Preserve existing user roles and data"
+  ],
+  "nonGoals": [
+    "Creating a new authentication system",
+    "Implementing email-based login",
+    "Changing the role-based access control structure"
+  ],
+  "imageRequirements": {
+    "required": [],
+    "edits": []
+  }
+}

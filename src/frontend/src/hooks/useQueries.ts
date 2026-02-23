@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useActor } from './useActor';
-import type { ControlCalidad, ControlCalidadConControlador, Filtro, DefectoCantidad, Empacador, Controlador, MuestraPlanilla, UserProfile, UserRole } from '../backend';
+import type { ControlCalidad, ControlCalidadConControlador, Filtro, DefectoCantidad, Empacador, Controlador, MuestraPlanilla, UserProfile, UserRole, UserWithRole } from '../backend';
 import { ExternalBlob } from '../backend';
 import type { Principal } from '@icp-sdk/core/principal';
 import { dateStringToTimestampUTC3 } from '../lib/utc3';
@@ -548,6 +548,36 @@ export function useIsCallerAdmin() {
   });
 }
 
+export function useGetAllUserRoles() {
+  const { actor, isFetching } = useActor();
+
+  return useQuery<UserWithRole[]>({
+    queryKey: ['allUserRoles'],
+    queryFn: async () => {
+      if (!actor) return [];
+      try {
+        const users = await actor.getAllUserRoles();
+        // Sort by role (admin first) then by name
+        return users.sort((a, b) => {
+          const roleOrder = { admin: 0, user: 1, guest: 2 };
+          const roleCompare = roleOrder[a.role] - roleOrder[b.role];
+          if (roleCompare !== 0) return roleCompare;
+          
+          const aName = a.profile?.name || a.principal.toString();
+          const bName = b.profile?.name || b.principal.toString();
+          return aName.localeCompare(bName, 'es');
+        });
+      } catch (error) {
+        console.error('Error obteniendo roles de usuarios:', error);
+        return [];
+      }
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 60000,
+    gcTime: 300000,
+  });
+}
+
 export function useAssignUserRole() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -555,9 +585,10 @@ export function useAssignUserRole() {
   return useMutation({
     mutationFn: async ({ user, role }: { user: Principal; role: UserRole }) => {
       if (!actor) throw new Error('Actor no disponible');
-      return await actor.assignCallerUserRole(user, role);
+      return await actor.setUserRole(user, role);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUserRoles'] });
       queryClient.invalidateQueries({ queryKey: ['currentUserRole'] });
       queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
     },

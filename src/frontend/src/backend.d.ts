@@ -26,6 +26,11 @@ export interface ControlCalidadConControlador {
     control: ControlCalidad;
     controlador: Controlador;
 }
+export interface UserWithRole {
+    principal: Principal;
+    role: UserRole;
+    profile?: UserProfile;
+}
 export interface Empacador {
     id: string;
     activo: boolean;
@@ -115,6 +120,7 @@ export interface backendInterface {
     eliminarControl(id: string): Promise<string>;
     eliminarControlador(id: string): Promise<string>;
     eliminarEmpacador(id: string): Promise<string>;
+    getAllUserRoles(): Promise<Array<UserWithRole>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -136,4 +142,5 @@ export interface backendInterface {
     obtenerReportesPorRango(fechaInicio: bigint, fechaFin: bigint): Promise<Array<ReporteDiarioConControlador>>;
     registrarControl(defectos: Array<DefectoCantidad>, foto: ExternalBlob | null, cantidadMuestras: bigint, empacadorId: string, controladorId: string, dentroRangoPeso: boolean): Promise<string>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setUserRole(user: Principal, role: UserRole): Promise<void>;
 }

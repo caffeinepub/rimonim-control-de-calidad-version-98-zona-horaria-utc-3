@@ -6,19 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UserCog, Save, AlertCircle, Shield } from 'lucide-react';
+import { UserCog, Save, AlertCircle, Shield, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserRole } from '../backend';
-import { useAssignUserRole } from '../hooks/useQueries';
+import { useGetAllUserRoles, useAssignUserRole } from '../hooks/useQueries';
 import { Principal } from '@icp-sdk/core/principal';
-
-// Mock data structure for demonstration
-// In a real implementation, this would come from a backend query
-interface UserWithRole {
-  principal: string;
-  name?: string;
-  role: UserRole;
-}
 
 const roleLabels: Record<UserRole, string> = {
   [UserRole.admin]: 'Administrador',
@@ -39,16 +31,13 @@ const roleDescriptions: Record<UserRole, string> = {
 };
 
 export default function RolesUsuarios() {
-  const [users] = useState<UserWithRole[]>([
-    // Mock data - in real implementation, this would be fetched from backend
-    // For now, showing empty state with instructions
-  ]);
+  const { data: users = [], isLoading, isError } = useGetAllUserRoles();
   const [pendingChanges, setPendingChanges] = useState<Map<string, UserRole>>(new Map());
   const assignUserRole = useAssignUserRole();
 
-  const handleRoleChange = (principal: string, newRole: UserRole) => {
+  const handleRoleChange = (principalStr: string, newRole: UserRole) => {
     const newChanges = new Map(pendingChanges);
-    newChanges.set(principal, newRole);
+    newChanges.set(principalStr, newRole);
     setPendingChanges(newChanges);
   };
 
@@ -79,7 +68,6 @@ export default function RolesUsuarios() {
     }
 
     if (successCount > 0) {
-      // Update local state for successful changes
       setPendingChanges(new Map());
       
       toast.success('Roles actualizados correctamente', {
@@ -88,12 +76,57 @@ export default function RolesUsuarios() {
     }
   };
 
-  const getCurrentRole = (principal: string): UserRole => {
-    return pendingChanges.get(principal) ?? users.find(u => u.principal === principal)?.role ?? UserRole.guest;
+  const getCurrentRole = (principalStr: string): UserRole => {
+    return pendingChanges.get(principalStr) ?? users.find(u => u.principal.toString() === principalStr)?.role ?? UserRole.guest;
   };
 
   const hasChanges = pendingChanges.size > 0;
   const isSaving = assignUserRole.isPending;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white text-black p-4 sm:p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-96" />
+            </div>
+          </div>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="min-h-screen bg-white text-black p-4 sm:p-6 lg:p-8">
+        <div className="max-w-6xl mx-auto">
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-sm text-red-800 ml-2">
+              <strong>Error al cargar usuarios:</strong> No se pudo obtener la lista de usuarios del sistema.
+              Por favor, intenta recargar la página.
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-black p-4 sm:p-6 lg:p-8">
@@ -109,16 +142,6 @@ export default function RolesUsuarios() {
           </div>
         </div>
 
-        {/* Info Alert */}
-        <Alert className="border-[#BFA76F]/20 bg-[#BFA76F]/5">
-          <AlertCircle className="h-4 w-4 text-[#BFA76F]" />
-          <AlertDescription className="text-sm text-gray-700 ml-2">
-            <strong>Funcionalidad limitada:</strong> El backend actualmente no proporciona un endpoint para listar todos los usuarios del sistema.
-            Para asignar roles, necesitarás conocer el Principal ID del usuario. Una vez que el backend implemente la función de listado de usuarios,
-            esta página mostrará automáticamente todos los usuarios registrados.
-          </AlertDescription>
-        </Alert>
-
         {/* Main Card */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader className="border-b border-gray-200 bg-gray-50">
@@ -129,7 +152,7 @@ export default function RolesUsuarios() {
             <CardDescription className="text-gray-600">
               {users.length > 0 
                 ? 'Selecciona el rol apropiado para cada usuario y guarda los cambios'
-                : 'Actualmente no hay usuarios disponibles para mostrar'
+                : 'No hay usuarios registrados en el sistema'
               }
             </CardDescription>
           </CardHeader>
@@ -138,21 +161,11 @@ export default function RolesUsuarios() {
               <div className="text-center py-12">
                 <UserCog className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                  Lista de usuarios no disponible
+                  No hay usuarios registrados
                 </h3>
-                <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">
-                  El backend necesita implementar un endpoint para listar todos los usuarios del sistema.
-                  Una vez implementado, aquí aparecerá la lista de usuarios con sus roles actuales.
+                <p className="text-sm text-gray-500 max-w-md mx-auto">
+                  Cuando los usuarios inicien sesión por primera vez, aparecerán aquí y podrás asignarles roles.
                 </p>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-2xl mx-auto text-left">
-                  <p className="text-xs font-semibold text-gray-700 mb-2">Endpoint requerido en el backend:</p>
-                  <code className="text-xs text-gray-600 block bg-white p-2 rounded border border-gray-200">
-                    public query func getAllUsers() : async [UserWithRole]
-                  </code>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Donde <code className="bg-white px-1 py-0.5 rounded">UserWithRole</code> incluye: principal, profile (opcional), y role.
-                  </p>
-                </div>
               </div>
             ) : (
               <>
@@ -168,76 +181,79 @@ export default function RolesUsuarios() {
 
                 {/* Users Table */}
                 <div className="rounded-md border border-gray-200 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50">
-                        <TableHead className="text-black font-semibold">Usuario</TableHead>
-                        <TableHead className="text-black font-semibold">Principal ID</TableHead>
-                        <TableHead className="text-black font-semibold">Rol Actual</TableHead>
-                        <TableHead className="text-black font-semibold">Nuevo Rol</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => {
-                        const currentRole = getCurrentRole(user.principal);
-                        const hasChange = pendingChanges.has(user.principal);
-                        
-                        return (
-                          <TableRow key={user.principal} className={hasChange ? 'bg-blue-50/50' : ''}>
-                            <TableCell>
-                              {user.name ? (
-                                <div className="font-semibold text-black">{user.name}</div>
-                              ) : (
-                                <div className="text-gray-500 text-sm italic">Sin nombre</div>
-                              )}
-                            </TableCell>
-                            <TableCell className="font-mono text-xs text-gray-600">
-                              <div className="max-w-[200px] truncate" title={user.principal}>
-                                {user.principal}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={roleColors[user.role]} className="text-xs">
-                                <Shield className="h-3 w-3 mr-1" />
-                                {roleLabels[user.role]}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={currentRole}
-                                onValueChange={(value) => handleRoleChange(user.principal, value as UserRole)}
-                                disabled={isSaving}
-                              >
-                                <SelectTrigger className="w-full sm:w-[200px] bg-white border-gray-300">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white">
-                                  <SelectItem value={UserRole.admin}>
-                                    <span className="flex items-center gap-2">
-                                      <Shield className="h-3 w-3 text-red-600" />
-                                      Administrador
-                                    </span>
-                                  </SelectItem>
-                                  <SelectItem value={UserRole.user}>
-                                    <span className="flex items-center gap-2">
-                                      <Shield className="h-3 w-3 text-blue-600" />
-                                      Carga
-                                    </span>
-                                  </SelectItem>
-                                  <SelectItem value={UserRole.guest}>
-                                    <span className="flex items-center gap-2">
-                                      <Shield className="h-3 w-3 text-gray-600" />
-                                      Solo lectura
-                                    </span>
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead className="text-black font-semibold">Usuario</TableHead>
+                          <TableHead className="text-black font-semibold">Principal ID</TableHead>
+                          <TableHead className="text-black font-semibold">Rol Actual</TableHead>
+                          <TableHead className="text-black font-semibold">Nuevo Rol</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => {
+                          const principalStr = user.principal.toString();
+                          const currentRole = getCurrentRole(principalStr);
+                          const hasChange = pendingChanges.has(principalStr);
+                          
+                          return (
+                            <TableRow key={principalStr} className={hasChange ? 'bg-blue-50/50' : ''}>
+                              <TableCell>
+                                {user.profile?.name ? (
+                                  <div className="font-semibold text-black">{user.profile.name}</div>
+                                ) : (
+                                  <div className="text-gray-500 text-sm italic">Sin nombre</div>
+                                )}
+                              </TableCell>
+                              <TableCell className="font-mono text-xs text-gray-600">
+                                <div className="max-w-[200px] truncate" title={principalStr}>
+                                  {principalStr}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={roleColors[user.role]} className="text-xs">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  {roleLabels[user.role]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Select
+                                  value={currentRole}
+                                  onValueChange={(value) => handleRoleChange(principalStr, value as UserRole)}
+                                  disabled={isSaving}
+                                >
+                                  <SelectTrigger className="w-full sm:w-[200px] bg-white border-gray-300">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white">
+                                    <SelectItem value={UserRole.admin}>
+                                      <span className="flex items-center gap-2">
+                                        <Shield className="h-3 w-3 text-red-600" />
+                                        Administrador
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value={UserRole.user}>
+                                      <span className="flex items-center gap-2">
+                                        <Shield className="h-3 w-3 text-blue-600" />
+                                        Carga
+                                      </span>
+                                    </SelectItem>
+                                    <SelectItem value={UserRole.guest}>
+                                      <span className="flex items-center gap-2">
+                                        <Shield className="h-3 w-3 text-gray-600" />
+                                        Solo lectura
+                                      </span>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
 
                 {/* Save Button */}
@@ -250,7 +266,7 @@ export default function RolesUsuarios() {
                   >
                     {isSaving ? (
                       <>
-                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                         Guardando...
                       </>
                     ) : (
@@ -309,39 +325,6 @@ export default function RolesUsuarios() {
                 <p className="text-sm text-gray-600">
                   {roleDescriptions[UserRole.guest]}. No puede crear, modificar ni eliminar registros.
                 </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Integration Info */}
-        <Card className="border-gray-200 shadow-sm">
-          <CardHeader className="border-b border-gray-200 bg-gray-50">
-            <CardTitle className="text-lg text-black">Integración con Backend</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-2">
-                <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-green-600 text-xs">✓</span>
-                </div>
-                <div>
-                  <p className="text-gray-700 font-medium">Asignación de roles</p>
-                  <p className="text-gray-600">
-                    La función <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">assignCallerUserRole</code> está implementada y funcional.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <div className="h-5 w-5 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-yellow-600 text-xs">!</span>
-                </div>
-                <div>
-                  <p className="text-gray-700 font-medium">Listado de usuarios</p>
-                  <p className="text-gray-600">
-                    Se requiere implementar una función en el backend para obtener la lista de todos los usuarios registrados con sus roles actuales.
-                  </p>
-                </div>
               </div>
             </div>
           </CardContent>
