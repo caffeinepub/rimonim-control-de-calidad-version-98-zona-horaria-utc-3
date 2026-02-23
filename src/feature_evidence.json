@@ -1,4 +1,153 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-implement-code-splitting-and-lazy-loading-for-route-components-registrocontrol-reportes-historial-configuracionempacadores-configuracioncontroladores-gestionusuarios-rolesusuarios-in-app-tsx-using-react-lazy-and-suspense-to-reduce-initial-bundle-size-and-improve-load-times",
+      "featureTitle": "Implement code splitting and lazy loading for route components (RegistroControl, Reportes, Historial, ConfiguracionEmpacadores, ConfiguracionControladores, GestionUsuarios, RolesUsuarios) in App.tsx using React.lazy() and Suspense to reduce initial bundle size and improve load times",
+      "files": [
+        "frontend/src/App.tsx"
+      ],
+      "components": [
+        "blob-storage@2.0.3",
+        "camera@1.0.0",
+        "authorization@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-13"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-optimize-react-query-cache-configuration-by-adjusting-staletime-and-cachetime-settings-in-usequeries-ts-hooks-to-reduce-unnecessary-backend-refetches-for-empacadores-controladores-and-quality-control-records-that-change-infrequently",
+      "featureTitle": "Optimize React Query cache configuration by adjusting staleTime and cacheTime settings in useQueries.ts hooks to reduce unnecessary backend refetches for empacadores, controladores, and quality control records that change infrequently",
+      "files": [
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "blob-storage@2.0.3",
+        "camera@1.0.0",
+        "authorization@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-14"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-virtual-scrolling-or-pagination-for-the-historial-page-table-to-handle-large-datasets-efficiently-preventing-performance-degradation-when-displaying-hundreds-of-control-records",
+      "featureTitle": "Implement virtual scrolling or pagination for the Historial page table to handle large datasets efficiently, preventing performance degradation when displaying hundreds of control records",
+      "files": [
+        "frontend/src/pages/Historial.tsx"
+      ],
+      "components": [
+        "blob-storage@2.0.3",
+        "camera@1.0.0",
+        "authorization@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-15"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-optimize-image-handling-by-implementing-lazy-loading-for-control-record-images-in-historial-and-image-compression-before-upload-in-registrocontrol-reducing-page-weight-and-improving-load-times",
+      "featureTitle": "Optimize image handling by implementing lazy loading for control record images in Historial and image compression before upload in RegistroControl, reducing page weight and improving load times",
+      "files": [
+        "frontend/src/pages/Historial.tsx",
+        "frontend/src/pages/RegistroControl.tsx"
+      ],
+      "components": [
+        "blob-storage@2.0.3",
+        "camera@1.0.0",
+        "authorization@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-16"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-memoize-expensive-computations-in-reportes-page-chart-data-transformations-and-statistics-calculations-using-usememo-to-prevent-unnecessary-recalculations-on-re-renders",
+      "featureTitle": "Memoize expensive computations in Reportes page chart data transformations and statistics calculations using useMemo to prevent unnecessary recalculations on re-renders",
+      "files": [
+        "frontend/src/pages/Reportes.tsx"
+      ],
+      "components": [
+        "blob-storage@2.0.3",
+        "camera@1.0.0",
+        "authorization@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-17"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-debouncing-for-search-input-fields-in-historial-and-other-pages-to-reduce-the-frequency-of-query-executions-and-improve-perceived-performance",
+      "featureTitle": "Implement debouncing for search input fields in Historial and other pages to reduce the frequency of query executions and improve perceived performance",
+      "files": [
+        "frontend/src/pages/Historial.tsx"
+      ],
+      "components": [
+        "blob-storage@2.0.3",
+        "camera@1.0.0",
+        "authorization@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-19"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-minimize-re-renders-in-header-component-by-memoizing-the-menuitems-array-and-navigation-elements-using-usememo-preventing-unnecessary-recalculations-when-user-role-or-authentication-state-hasn-t-changed",
+      "featureTitle": "Minimize re-renders in Header component by memoizing the menuItems array and navigation elements using useMemo, preventing unnecessary recalculations when user role or authentication state hasn't changed",
+      "files": [
+        "frontend/src/components/Header.tsx"
+      ],
+      "components": [
+        "blob-storage@2.0.3",
+        "camera@1.0.0",
+        "authorization@1.0.1",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-20"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

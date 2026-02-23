@@ -10,9 +10,7 @@ import Float "mo:base/Float";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor Backend {
   let storage = Storage.new();
   include MixinStorage(storage);
@@ -65,6 +63,10 @@ actor Backend {
     empacadorId : ?Text;
     controladorId : ?Text;
     dentroRangoPeso : ?Bool;
+    page : Nat;
+    pageSize : Nat;
+    sortBy : ?Text;
+    sortOrder : ?Text; // "asc" or "desc"
   };
 
   public type ReporteDiario = {
@@ -167,9 +169,6 @@ actor Backend {
   // Required AccessControl functions
   public shared ({ caller }) func initializeAccessControl() : async () {
     AccessControl.initialize(accessControlState, caller);
-    // Note: To assign admin roles to specific principals (jonysued1@hotmail.com and jonatan@rimonim.com.ar),
-    // you must first obtain their actual Principal IDs through Internet Identity authentication,
-    // then call setUserRole() with those principals and #admin role.
   };
 
   public query ({ caller }) func getCallerUserRole() : async AccessControl.UserRole {
@@ -519,6 +518,18 @@ actor Backend {
     textMap.get(controles, id);
   };
 
+  func compareControl(control : ControlCalidad, sortBy : Text) : Text {
+    switch (sortBy) {
+      case ("fecha") { Int.toText(control.fecha) };
+      case ("cantidadMuestras") { Int.toText(control.cantidadMuestras) };
+      case ("horaRegistro") { control.horaRegistro };
+      case ("empacador") { control.empacadorId };
+      case ("controlador") { control.controladorId };
+      case ("dentroRangoPeso") { Int.toText(control.fecha) };
+      case (_) { control.id };
+    };
+  };
+
   public query ({ caller }) func obtenerControlesFiltrados(filtro : Filtro) : async [ControlCalidadConControlador] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Debug.trap("No autorizado: Solo usuarios pueden ver controles");
@@ -560,8 +571,43 @@ actor Backend {
       },
     );
 
+    // Apply sorting
+    let sortedFiltrados = switch (filtro.sortBy) {
+      case (null) { filtrados };
+      case (?sortBy) {
+        Array.sort<ControlCalidad>(
+          filtrados,
+          func(a, b) {
+            let aVal = compareControl(a, sortBy);
+            let bVal = compareControl(b, sortBy);
+            switch (filtro.sortOrder) {
+              case (null) { Text.compare(aVal, bVal) };
+              case (?order) {
+                switch (order) {
+                  case ("desc") { Text.compare(bVal, aVal) };
+                  case (_) { Text.compare(aVal, bVal) };
+                };
+              };
+            };
+          },
+        );
+      };
+    };
+
+    // Apply pagination
+    let page = filtro.page;
+    let pageSize = filtro.pageSize;
+    let startIndex = page * pageSize;
+    let endIndex = startIndex + pageSize;
+    let paginated = Array.tabulate<ControlCalidad>(
+      if (startIndex >= sortedFiltrados.size()) { 0 } else if (endIndex > sortedFiltrados.size()) {
+        sortedFiltrados.size() - startIndex;
+      } else { pageSize },
+      func(i) { sortedFiltrados[startIndex + i] },
+    );
+
     Array.map<ControlCalidad, ControlCalidadConControlador>(
-      filtrados,
+      paginated,
       func(control) {
         let controlador = switch (textMap.get(controladores, control.controladorId)) {
           case (null) {
@@ -578,13 +624,47 @@ actor Backend {
     );
   };
 
-  public query ({ caller }) func obtenerHistorial() : async [ControlCalidadConControlador] {
+  public query ({ caller }) func obtenerHistorial(page : Nat, pageSize : Nat, sortBy : ?Text, sortOrder : ?Text) : async [ControlCalidadConControlador] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Debug.trap("No autorizado: Solo usuarios pueden ver el historial");
     };
     let todos = Iter.toArray(textMap.vals(controles));
+
+    // Apply sorting
+    let sortedControles = switch (sortBy) {
+      case (null) { todos };
+      case (?sortBy) {
+        Array.sort<ControlCalidad>(
+          todos,
+          func(a, b) {
+            let aVal = compareControl(a, sortBy);
+            let bVal = compareControl(b, sortBy);
+            switch (sortOrder) {
+              case (null) { Text.compare(aVal, bVal) };
+              case (?order) {
+                switch (order) {
+                  case ("desc") { Text.compare(bVal, aVal) };
+                  case (_) { Text.compare(aVal, bVal) };
+                };
+              };
+            };
+          },
+        );
+      };
+    };
+
+    // Apply pagination
+    let startIndex = page * pageSize;
+    let endIndex = startIndex + pageSize;
+    let paginated = Array.tabulate<ControlCalidad>(
+      if (startIndex >= sortedControles.size()) { 0 } else if (endIndex > sortedControles.size()) {
+        sortedControles.size() - startIndex;
+      } else { pageSize },
+      func(i) { sortedControles[startIndex + i] },
+    );
+
     Array.map<ControlCalidad, ControlCalidadConControlador>(
-      todos,
+      paginated,
       func(control) {
         let controlador = switch (textMap.get(controladores, control.controladorId)) {
           case (null) {
@@ -1091,3 +1171,4 @@ actor Backend {
     AccessControl.assignRole(accessControlState, caller, user, role);
   };
 };
+

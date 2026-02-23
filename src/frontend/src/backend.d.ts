@@ -15,6 +15,10 @@ export class ExternalBlob {
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
 export interface Filtro {
+    sortBy?: string;
+    sortOrder?: string;
+    page: bigint;
+    pageSize: bigint;
     empacadorId?: string;
     fechaInicio?: bigint;
     defecto?: Defecto;
@@ -133,7 +137,7 @@ export interface backendInterface {
     obtenerControlesFiltrados(filtro: Filtro): Promise<Array<ControlCalidadConControlador>>;
     obtenerDetalleMuestra(id: string): Promise<MuestraPlanilla | null>;
     obtenerEmpacadoresActivos(): Promise<Array<Empacador>>;
-    obtenerHistorial(): Promise<Array<ControlCalidadConControlador>>;
+    obtenerHistorial(page: bigint, pageSize: bigint, sortBy: string | null, sortOrder: string | null): Promise<Array<ControlCalidadConControlador>>;
     obtenerIdentificadoresParaConvertir(): Promise<Array<[string, boolean]>>;
     obtenerMuestrasParaPlanilla(fechaInicio: bigint, fechaFin: bigint): Promise<Array<MuestraPlanilla>>;
     obtenerProximoIdentificador(): Promise<string>;

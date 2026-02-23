@@ -1,697 +1,542 @@
-import { useState, useMemo, useCallback, memo, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Camera, Loader2, CheckCircle2, X, AlertTriangle, Info, Clock, RefreshCw, Scale, UserCheck } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useCamera } from '../camera/useCamera';
 import { useRegistrarControl, useObtenerEmpacadoresActivos, useObtenerControladoresActivos, useObtenerProximoIdentificador } from '../hooks/useQueries';
-import { Defecto } from '../backend';
+import { Defecto, DefectoCantidad } from '../backend';
+import { Camera, CheckCircle, AlertCircle, Package, Scale, UserCheck } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { Progress } from '@/components/ui/progress';
-import { getCurrentDateDisplayUTC3, formatDateUTC3 } from '../lib/utc3';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+const DEFECTO_LABELS: Record<Defecto, string> = {
+  [Defecto.raset]: 'Raset',
+  [Defecto.cracking]: 'Cracking',
+  [Defecto.golpeSol]: 'Golpe de sol',
+  [Defecto.podredumbre]: 'Podredumbre',
+};
+
+// Helper function to compress image
+async function compressImage(file: File, maxSizeMB: number = 1, quality: number = 0.85): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions while maintaining aspect ratio
+        const maxDimension = 1920;
+        if (width > height && width > maxDimension) {
+          height = (height * maxDimension) / width;
+          width = maxDimension;
+        } else if (height > maxDimension) {
+          width = (width * maxDimension) / height;
+          height = maxDimension;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('Canvas to Blob conversion failed'));
+              return;
+            }
+
+            // Check if compressed size is acceptable
+            const compressedSizeMB = blob.size / (1024 * 1024);
+            if (compressedSizeMB <= maxSizeMB) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              // If still too large, try with lower quality
+              const newQuality = Math.max(0.5, quality - 0.1);
+              if (newQuality < quality) {
+                canvas.toBlob(
+                  (blob2) => {
+                    if (!blob2) {
+                      reject(new Error('Canvas to Blob conversion failed'));
+                      return;
+                    }
+                    const compressedFile = new File([blob2], file.name, {
+                      type: 'image/jpeg',
+                      lastModified: Date.now(),
+                    });
+                    resolve(compressedFile);
+                  },
+                  'image/jpeg',
+                  newQuality
+                );
+              } else {
+                resolve(file);
+              }
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+    };
+    reader.onerror = () => reject(new Error('File read failed'));
+  });
+}
 
 export default function RegistroControl() {
-  const [defectosCantidades, setDefectosCantidades] = useState<Record<Defecto, string>>({
+  const [cantidadMuestras, setCantidadMuestras] = useState<string>('');
+  const [empacadorId, setEmpacadorId] = useState<string>('');
+  const [controladorId, setControladorId] = useState<string>('');
+  const [dentroRangoPeso, setDentroRangoPeso] = useState<string>('');
+  const [defectos, setDefectos] = useState<Record<Defecto, string>>({
     [Defecto.raset]: '0',
     [Defecto.cracking]: '0',
     [Defecto.golpeSol]: '0',
     [Defecto.podredumbre]: '0',
   });
-  const [cantidadMuestras, setCantidadMuestras] = useState('');
-  const [empacadorId, setEmpacadorId] = useState('');
-  const [controladorId, setControladorId] = useState('');
-  const [dentroRangoPeso, setDentroRangoPeso] = useState<string>('');
   const [capturedPhoto, setCapturedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoUploaded, setPhotoUploaded] = useState(false);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
 
   const { data: empacadores, isLoading: isLoadingEmpacadores } = useObtenerEmpacadoresActivos();
   const { data: controladores, isLoading: isLoadingControladores } = useObtenerControladoresActivos();
-  const { data: proximoIdentificador, isLoading: isLoadingIdentificador, refetch: refetchIdentificador } = useObtenerProximoIdentificador();
+  const { data: proximoIdentificador, isLoading: isLoadingIdentificador } = useObtenerProximoIdentificador();
   const registrarMutation = useRegistrarControl();
 
-  // Auto-refresh next identifier every 5 seconds
+  const {
+    isActive: isCameraActive,
+    isSupported: isCameraSupported,
+    error: cameraError,
+    isLoading: isCameraLoading,
+    startCamera,
+    stopCamera,
+    capturePhoto,
+    videoRef,
+    canvasRef,
+  } = useCamera({
+    facingMode: 'environment',
+    width: 1920,
+    height: 1080,
+    quality: 0.85,
+    format: 'image/jpeg',
+  });
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      refetchIdentificador();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [refetchIdentificador]);
-
-  const totalDefectos = useMemo(() => {
-    return Object.values(defectosCantidades).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
-  }, [defectosCantidades]);
-
-  const muestrasCount = parseInt(cantidadMuestras) || 0;
-  const exceedsLimit = totalDefectos > muestrasCount;
-  const progressPercentage = muestrasCount > 0 ? Math.min((totalDefectos / muestrasCount) * 100, 100) : 0;
-
-  const handleDefectoCantidadChange = useCallback((defecto: Defecto, value: string) => {
-    if (/^\d*$/.test(value)) {
-      setDefectosCantidades((prev) => ({
-        ...prev,
-        [defecto]: value,
-      }));
+    if (showCamera && !isCameraActive && !isCameraLoading) {
+      startCamera();
     }
-  }, []);
+  }, [showCamera]);
 
-  const handleDefectoFocus = useCallback((defecto: Defecto, value: string) => {
-    if (value === '0') {
-      setDefectosCantidades((prev) => ({
-        ...prev,
-        [defecto]: '',
-      }));
-    }
-  }, []);
+  const handleOpenCamera = async () => {
+    setShowCamera(true);
+  };
 
-  const handleDefectoBlur = useCallback((defecto: Defecto, value: string) => {
-    if (value === '') {
-      setDefectosCantidades((prev) => ({
-        ...prev,
-        [defecto]: '0',
-      }));
-    }
-  }, []);
+  const handleCloseCamera = async () => {
+    await stopCamera();
+    setShowCamera(false);
+  };
 
-  const handleOpenCamera = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Por favor seleccione un archivo de imagen válido');
-        return;
+  const handleCapturePhoto = async () => {
+    const photo = await capturePhoto();
+    if (photo) {
+      try {
+        // Compress the image before storing
+        const compressedPhoto = await compressImage(photo, 1, 0.85);
+        const originalSizeMB = (photo.size / (1024 * 1024)).toFixed(2);
+        const compressedSizeMB = (compressedPhoto.size / (1024 * 1024)).toFixed(2);
+        
+        console.log(`Image compressed: ${originalSizeMB}MB → ${compressedSizeMB}MB`);
+        
+        setCapturedPhoto(compressedPhoto);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoPreview(reader.result as string);
+        };
+        reader.readAsDataURL(compressedPhoto);
+        await handleCloseCamera();
+        toast.success(`Foto capturada y comprimida (${compressedSizeMB}MB)`);
+      } catch (error) {
+        console.error('Error compressing image:', error);
+        toast.error('Error al comprimir la imagen');
       }
-
-      setCapturedPhoto(file);
-      const preview = URL.createObjectURL(file);
-      setPhotoPreview(preview);
-      setPhotoUploaded(true);
-      toast.success('Foto cargada correctamente');
     }
-  }, []);
+  };
 
-  const handleRemovePhoto = useCallback(() => {
-    if (photoPreview) {
-      URL.revokeObjectURL(photoPreview);
+  const handleDefectoChange = (defecto: Defecto, value: string) => {
+    if (value === '') {
+      setDefectos(prev => ({ ...prev, [defecto]: '' }));
+    } else {
+      const numValue = parseInt(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+        setDefectos(prev => ({ ...prev, [defecto]: numValue.toString() }));
+      }
     }
-    setCapturedPhoto(null);
-    setPhotoPreview(null);
-    setPhotoUploaded(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [photoPreview]);
+  };
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleDefectoBlur = (defecto: Defecto) => {
+    if (defectos[defecto] === '') {
+      setDefectos(prev => ({ ...prev, [defecto]: '0' }));
+    }
+  };
+
+  const handleDefectoFocus = (defecto: Defecto) => {
+    if (defectos[defecto] === '0') {
+      setDefectos(prev => ({ ...prev, [defecto]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!cantidadMuestras || muestrasCount <= 0) {
-      toast.error('Por favor ingrese una cantidad de muestras válida');
+    if (!capturedPhoto) {
+      toast.error('Debes tomar una foto para continuar');
       return;
     }
 
     if (!empacadorId) {
-      toast.error('Por favor seleccione el empacador');
+      toast.error('Debes seleccionar un empacador');
       return;
     }
 
     if (!controladorId) {
-      toast.error('Por favor seleccione el controlador', {
-        description: 'Este campo es obligatorio para registrar el control de calidad',
-        duration: 5000,
-      });
+      toast.error('Debes seleccionar un controlador');
       return;
     }
 
     if (!dentroRangoPeso) {
-      toast.error('Por favor seleccione si está dentro del rango de peso', {
-        description: 'Este campo es obligatorio para registrar el control de calidad',
-        duration: 5000,
-      });
+      toast.error('Debes indicar si está dentro del rango de peso');
       return;
     }
 
-    if (!capturedPhoto) {
-      toast.error('Debes tomar una foto para continuar', {
-        description: 'La foto es obligatoria para registrar el control de calidad',
-        duration: 5000,
-      });
+    const cantidad = parseInt(cantidadMuestras);
+    if (isNaN(cantidad) || cantidad <= 0) {
+      toast.error('La cantidad de muestras debe ser mayor a 0');
       return;
     }
 
-    if (exceedsLimit) {
+    const defectosArray: DefectoCantidad[] = Object.entries(defectos)
+      .map(([defecto, cantidad]) => ({
+        defecto: defecto as Defecto,
+        cantidad: BigInt(parseInt(cantidad) || 0),
+      }))
+      .filter(d => Number(d.cantidad) > 0);
+
+    const totalDefectos = defectosArray.reduce((sum, d) => sum + Number(d.cantidad), 0);
+    if (totalDefectos > cantidad) {
       toast.error('La suma de defectos no puede exceder la cantidad de muestras');
       return;
     }
-
-    const defectosArray = Object.entries(defectosCantidades)
-      .filter(([, cantidad]) => parseInt(cantidad) > 0)
-      .map(([defecto, cantidad]) => ({
-        defecto: defecto as Defecto,
-        cantidad: BigInt(parseInt(cantidad)),
-      }));
 
     try {
       const result = await registrarMutation.mutateAsync({
         defectos: defectosArray,
         foto: capturedPhoto,
-        cantidadMuestras: muestrasCount,
+        cantidadMuestras: cantidad,
         empacadorId,
         controladorId,
         dentroRangoPeso: dentroRangoPeso === 'si',
       });
 
-      const fechaRegistro = formatDateUTC3(result.fecha);
-      
-      const sampleTime = result.sampleTime;
-      const frutasSinDefectos = muestrasCount - totalDefectos;
-      const rangoPesoTexto = dentroRangoPeso === 'si' ? 'Sí' : 'No';
-      
-      toast.success('✅ Control registrado exitosamente', {
-        description: `🕐 Identificador de muestra: ${sampleTime}\n📅 Fecha (UTC-3): ${fechaRegistro}\n🍎 Variedad: Wonderful\n⚖️ Dentro de rango de peso: ${rangoPesoTexto}\n✅ ${frutasSinDefectos} frutas sin defectos${totalDefectos > 0 ? `\n⚠️ ${totalDefectos} frutas con defectos` : ''}`,
-        duration: 8000,
-      });
+      toast.success(`Control registrado exitosamente: ${result.sampleTime}`);
 
       // Reset form
-      setDefectosCantidades({
+      setCantidadMuestras('');
+      setEmpacadorId('');
+      setControladorId('');
+      setDentroRangoPeso('');
+      setDefectos({
         [Defecto.raset]: '0',
         [Defecto.cracking]: '0',
         [Defecto.golpeSol]: '0',
         [Defecto.podredumbre]: '0',
       });
-      setCantidadMuestras('');
-      setEmpacadorId('');
-      setControladorId('');
-      setDentroRangoPeso('');
       setCapturedPhoto(null);
-      if (photoPreview) {
-        URL.revokeObjectURL(photoPreview);
-      }
       setPhotoPreview(null);
-      setPhotoUploaded(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
-      // Immediate refetch of next identifier
-      await refetchIdentificador();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al registrar el control de calidad';
-      toast.error(errorMessage);
-      console.error(error);
+    } catch (error: any) {
+      console.error('Error registrando control:', error);
+      toast.error(error?.message || 'Error al registrar el control');
     }
-  }, [cantidadMuestras, empacadorId, controladorId, dentroRangoPeso, totalDefectos, exceedsLimit, defectosCantidades, capturedPhoto, muestrasCount, registrarMutation, photoPreview, refetchIdentificador]);
+  };
 
-  const defectosOptions = useMemo(() => [
-    { value: Defecto.raset, label: 'Raset' },
-    { value: Defecto.cracking, label: 'Cracking' },
-    { value: Defecto.golpeSol, label: 'Golpe de sol' },
-    { value: Defecto.podredumbre, label: 'Podredumbre' },
-  ], []);
-
-  const isFormValid = !exceedsLimit && 
-                      !!empacadores && 
-                      empacadores.length > 0 &&
-                      !!controladores &&
-                      controladores.length > 0 &&
-                      !!capturedPhoto &&
-                      muestrasCount > 0 &&
-                      !!empacadorId &&
-                      !!controladorId &&
-                      !!dentroRangoPeso;
+  if (isLoadingEmpacadores || isLoadingControladores) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="w-full py-4 sm:py-6 md:py-8 px-3 sm:px-4">
+          <div className="space-y-4 sm:space-y-6">
+            <Skeleton className="h-24 sm:h-32 w-full" />
+            <Skeleton className="h-64 sm:h-96 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white text-black">
-      <div className="w-full py-3 sm:py-4 md:py-6 lg:py-8 px-2 sm:px-3 md:px-4">
-        <div className="mx-auto w-full max-w-2xl">
+      <div className="w-full py-4 sm:py-6 md:py-8 px-3 sm:px-4">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-black">Registro de Control de Calidad</h2>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">Variedad: Wonderful • Zona horaria: UTC-3</p>
+        </div>
+
+        {/* Next Identifier Preview */}
+        {!isLoadingIdentificador && proximoIdentificador && (
+          <Alert className="mb-4 sm:mb-6 bg-primary/5 border-primary/20">
+            <AlertCircle className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm text-black ml-2">
+              <strong>Próximo identificador:</strong> {proximoIdentificador} (UTC-3)
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          {/* Camera Section */}
           <Card className="bg-white border-gray-200">
-            <CardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 md:py-5">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base md:text-lg lg:text-xl text-black">
-                <Camera className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-                <span className="break-words">Nuevo Control de Calidad</span>
+            <CardHeader className="px-3 sm:px-4 md:px-6 py-4 sm:py-5">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-black">
+                <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+                Fotografía (Obligatorio)
               </CardTitle>
-              <CardDescription className="text-xs sm:text-sm text-gray-600 mt-1">
-                Registre los defectos encontrados en la muestra (puede registrar sin defectos) • Zona horaria: UTC-3
+              <CardDescription className="text-xs sm:text-sm text-gray-600">
+                Capture una foto de la muestra para el registro
               </CardDescription>
             </CardHeader>
-            <CardContent className="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
-              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-                <Alert className="border-blue-200 bg-blue-50">
-                  <Info className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                  <AlertDescription className="text-xs sm:text-sm text-blue-800">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1.5">
-                        <strong>📅 Fecha (UTC-3):</strong> {getCurrentDateDisplayUTC3()}
-                      </div>
-                    </div>
-                  </AlertDescription>
-                </Alert>
+            <CardContent className="px-3 sm:px-4 md:px-6 pb-4 sm:pb-6">
+              {!showCamera && !photoPreview && (
+                <Button
+                  type="button"
+                  onClick={handleOpenCamera}
+                  className="w-full bg-primary hover:bg-primary/90 text-white"
+                  disabled={isCameraSupported === false}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  {isCameraSupported === false ? 'Cámara no disponible' : 'Abrir Cámara'}
+                </Button>
+              )}
 
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs sm:text-sm text-black font-semibold">Nombre de muestra (UTC-3)</Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => refetchIdentificador()}
-                      className="h-7 px-2 text-xs"
-                      disabled={isLoadingIdentificador}
-                    >
-                      <RefreshCw className={`h-3 w-3 ${isLoadingIdentificador ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border-2 border-primary bg-primary/5 px-3 py-3 sm:py-3.5">
-                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
-                    <div className="flex-1">
-                      {isLoadingIdentificador ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                          <span className="text-sm text-gray-600">Cargando...</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-0.5">
-                          <div className="text-lg sm:text-xl font-bold text-primary">
-                            {proximoIdentificador || '00:00:00'}
-                          </div>
-                          <div className="text-[10px] sm:text-xs text-gray-600">
-                            Identificador de tiempo UTC-3 que se asignará automáticamente
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-gray-600 space-y-0.5 pl-1">
-                    <div>• Identificador basado en hora UTC-3 de registro: <strong>HH:MM:SS</strong></div>
-                    <div>• Único por día calendario UTC-3</div>
-                    <div>• Se actualiza en tiempo real después de cada registro</div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label className="text-xs sm:text-sm text-black">Variedad de Granada</Label>
-                  <div className="flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm text-black">
-                    <span className="font-medium">🍎 Wonderful</span>
-                    <span className="text-xs text-gray-600">(Variedad fija para todos los registros)</span>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label htmlFor="cantidadMuestras" className="text-xs sm:text-sm text-black">Cantidad de frutas revisadas</Label>
-                  <Input
-                    id="cantidadMuestras"
-                    type="number"
-                    min="1"
-                    value={cantidadMuestras}
-                    onChange={(e) => setCantidadMuestras(e.target.value)}
-                    placeholder="Ej: 10"
-                    required
-                    className="bg-white border-gray-300 text-black h-10 sm:h-11 text-sm"
-                  />
-                </div>
-
-                <EmpacadorSelector
-                  empacadorId={empacadorId}
-                  setEmpacadorId={setEmpacadorId}
-                  empacadores={empacadores}
-                  isLoadingEmpacadores={isLoadingEmpacadores}
-                />
-
-                <ControladorSelector
-                  controladorId={controladorId}
-                  setControladorId={setControladorId}
-                  controladores={controladores}
-                  isLoadingControladores={isLoadingControladores}
-                />
-
-                <div className="space-y-1.5 sm:space-y-2">
-                  <Label htmlFor="dentroRangoPeso" className="text-xs sm:text-sm text-black font-semibold">
-                    Dentro de rango de peso <span className="text-destructive">*</span>
-                  </Label>
-                  <Select value={dentroRangoPeso} onValueChange={setDentroRangoPeso}>
-                    <SelectTrigger id="dentroRangoPeso" className="bg-white border-gray-300 text-black h-10 sm:h-11 text-sm">
-                      <SelectValue placeholder="Seleccione una opción" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-gray-300">
-                      <SelectItem value="si">
-                        <div className="flex items-center gap-2">
-                          <Scale className="h-4 w-4 text-green-600" />
-                          <span>Sí</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="no">
-                        <div className="flex items-center gap-2">
-                          <Scale className="h-4 w-4 text-red-600" />
-                          <span>No</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {dentroRangoPeso && (
-                    <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-                      <Scale className={`h-4 w-4 ${dentroRangoPeso === 'si' ? 'text-green-600' : 'text-red-600'}`} />
-                      <span>Seleccionado: {dentroRangoPeso === 'si' ? 'Sí' : 'No'}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2 sm:space-y-3">
-                  <Label className="text-xs sm:text-sm text-black">Defectos Detectados (Cantidad de frutas afectadas)</Label>
-                  <div className="space-y-2 sm:space-y-3 rounded-lg border border-gray-200 p-2.5 sm:p-3 md:p-4 bg-white">
-                    {defectosOptions.map((defecto) => (
-                      <DefectoInput
-                        key={defecto.value}
-                        defecto={defecto}
-                        value={defectosCantidades[defecto.value]}
-                        onChange={handleDefectoCantidadChange}
-                        onFocus={handleDefectoFocus}
-                        onBlur={handleDefectoBlur}
-                      />
-                    ))}
+              {showCamera && (
+                <div className="space-y-4">
+                  <div className="relative w-full bg-black rounded-lg overflow-hidden" style={{ aspectRatio: '16/9', minHeight: '300px' }}>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                    <canvas ref={canvasRef} style={{ display: 'none' }} />
                   </div>
 
-                  {totalDefectos === 0 && muestrasCount > 0 && (
-                    <Alert className="border-green-200 bg-green-50">
-                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                      <AlertDescription className="text-xs sm:text-sm text-green-800">
-                        ✅ Se registrará un control sin defectos detectados. Esto indica que todas las {muestrasCount} frutas están en perfecto estado.
+                  {cameraError && (
+                    <Alert className="bg-red-50 border-red-200">
+                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-sm text-red-800 ml-2">
+                        <strong>Error de cámara:</strong> {cameraError.message}
                       </AlertDescription>
                     </Alert>
                   )}
 
-                  {muestrasCount > 0 && totalDefectos > 0 && (
-                    <div className="space-y-2 rounded-lg border border-gray-200 p-2.5 sm:p-3 md:p-4 bg-white">
-                      <div className="flex items-center justify-between text-xs sm:text-sm">
-                        <span className="font-medium text-black">Total de frutas con defectos:</span>
-                        <span className={`font-bold ${exceedsLimit ? 'text-destructive' : 'text-black'}`}>
-                          {totalDefectos} / {muestrasCount}
-                        </span>
-                      </div>
-                      <Progress 
-                        value={progressPercentage} 
-                        className={exceedsLimit ? '[&>div]:bg-destructive' : ''}
-                      />
-                      {exceedsLimit && (
-                        <Alert variant="destructive" className="mt-2">
-                          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                          <AlertDescription className="text-xs sm:text-sm">
-                            La suma de defectos ({totalDefectos}) excede la cantidad de frutas ({muestrasCount})
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs sm:text-sm text-black font-semibold">
-                      Foto de la Muestra <span className="text-destructive">*</span>
-                    </Label>
-                    <span className="text-[10px] sm:text-xs text-destructive font-medium">(Obligatorio)</span>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={handleCapturePhoto}
+                      disabled={!isCameraActive || isCameraLoading}
+                      className="flex-1 bg-primary hover:bg-primary/90 text-white"
+                    >
+                      <Camera className="mr-2 h-4 w-4" />
+                      Capturar Foto
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={handleCloseCamera}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
                   </div>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-
-                  {!capturedPhoto && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleOpenCamera}
-                        className="w-full h-11 sm:h-10 text-sm border-primary hover:bg-primary/5"
-                      >
-                        <Camera className="mr-2 h-4 w-4" />
-                        Abrir Cámara
-                      </Button>
-                      <Alert className="border-amber-200 bg-amber-50">
-                        <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                        <AlertDescription className="text-xs sm:text-sm text-amber-800">
-                          <strong>⚠️ Debes tomar una foto para continuar con el registro.</strong> La foto es obligatoria para documentar el control de calidad.
-                        </AlertDescription>
-                      </Alert>
-                    </>
-                  )}
-
-                  {capturedPhoto && photoPreview && (
-                    <div className="space-y-2 sm:space-y-3">
-                      <div className="relative overflow-hidden rounded-lg border border-gray-300 bg-gray-50">
-                        <img
-                          src={photoPreview}
-                          alt="Foto capturada"
-                          className="w-full"
-                          style={{ maxHeight: '400px', objectFit: 'contain' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleRemovePhoto}
-                          className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 sm:p-2 text-white hover:bg-black/80 transition-colors"
-                          aria-label="Eliminar foto"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                      
-                      {photoUploaded && (
-                        <div className="flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-2.5 sm:px-3 py-2">
-                          <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                          <span className="text-xs sm:text-sm text-green-800 font-medium">
-                            📸 Foto cargada correctamente
-                          </span>
-                        </div>
-                      )}
-
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleOpenCamera}
-                        className="w-full h-11 sm:h-10 text-sm"
-                      >
-                        <Camera className="mr-2 h-4 w-4" />
-                        Cambiar Foto
-                      </Button>
-                    </div>
-                  )}
                 </div>
+              )}
 
-                <Button
-                  type="submit"
-                  className="w-full h-11 sm:h-12 text-sm sm:text-base"
-                  disabled={registrarMutation.isPending || !isFormValid}
-                  size="lg"
-                >
-                  {registrarMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                      Registrando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                      Registrar Control
-                    </>
-                  )}
-                </Button>
-
-                {!isFormValid && !registrarMutation.isPending && (
-                  <Alert className="border-amber-200 bg-amber-50">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                    <AlertDescription className="text-xs sm:text-sm text-amber-800">
-                      <strong>Complete todos los campos requeridos:</strong>
-                      <ul className="mt-1 ml-4 list-disc text-[10px] sm:text-xs">
-                        {muestrasCount <= 0 && <li>Ingrese la cantidad de frutas</li>}
-                        {!empacadorId && <li>Seleccione el empacador</li>}
-                        {!controladorId && <li><strong>Seleccione el controlador (obligatorio)</strong></li>}
-                        {!dentroRangoPeso && <li><strong>Seleccione si está dentro del rango de peso (obligatorio)</strong></li>}
-                        {!capturedPhoto && <li><strong>Tome una foto (obligatorio)</strong></li>}
-                        {exceedsLimit && <li>Corrija la cantidad de defectos</li>}
-                      </ul>
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </form>
+              {photoPreview && !showCamera && (
+                <div className="space-y-4">
+                  <div className="relative w-full bg-black rounded-lg overflow-hidden">
+                    <img
+                      src={photoPreview}
+                      alt="Foto capturada"
+                      className="w-full h-auto"
+                      loading="lazy"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleOpenCamera}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    Tomar Nueva Foto
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
-        </div>
+
+          {/* Sample Details */}
+          <Card className="bg-white border-gray-200">
+            <CardHeader className="px-3 sm:px-4 md:px-6 py-4 sm:py-5">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-black">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                Detalles de la Muestra
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-4 md:px-6 pb-4 sm:pb-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="cantidadMuestras" className="text-sm font-medium text-black">
+                  Cantidad de Muestras (Frutas) *
+                </Label>
+                <Input
+                  id="cantidadMuestras"
+                  type="number"
+                  min="1"
+                  value={cantidadMuestras}
+                  onChange={(e) => setCantidadMuestras(e.target.value)}
+                  placeholder="Ej: 50"
+                  required
+                  className="bg-white border-gray-300 text-black"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="empacador" className="text-sm font-medium text-black">
+                  Empacador *
+                </Label>
+                <Select value={empacadorId} onValueChange={setEmpacadorId} required>
+                  <SelectTrigger id="empacador" className="bg-white border-gray-300 text-black">
+                    <SelectValue placeholder="Seleccione un empacador" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {empacadores?.map((empacador) => (
+                      <SelectItem key={empacador.id} value={empacador.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: empacador.color }}
+                          />
+                          {empacador.identificador}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="controlador" className="text-sm font-medium text-black flex items-center gap-1">
+                  <UserCheck className="h-4 w-4" />
+                  Controlador *
+                </Label>
+                <Select value={controladorId} onValueChange={setControladorId} required>
+                  <SelectTrigger id="controlador" className="bg-white border-gray-300 text-black">
+                    <SelectValue placeholder="Seleccione un controlador" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    {controladores?.map((controlador) => (
+                      <SelectItem key={controlador.id} value={controlador.id}>
+                        {controlador.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dentroRangoPeso" className="text-sm font-medium text-black flex items-center gap-1">
+                  <Scale className="h-4 w-4" />
+                  Dentro de Rango de Peso *
+                </Label>
+                <Select value={dentroRangoPeso} onValueChange={setDentroRangoPeso} required>
+                  <SelectTrigger id="dentroRangoPeso" className="bg-white border-gray-300 text-black">
+                    <SelectValue placeholder="Seleccione una opción" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white">
+                    <SelectItem value="si">Sí</SelectItem>
+                    <SelectItem value="no">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Defects */}
+          <Card className="bg-white border-gray-200">
+            <CardHeader className="px-3 sm:px-4 md:px-6 py-4 sm:py-5">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-black">
+                <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+                Defectos Encontrados
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm text-gray-600">
+                Ingrese la cantidad de frutas con cada tipo de defecto (0 si no hay)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-3 sm:px-4 md:px-6 pb-4 sm:pb-6 space-y-4">
+              {Object.entries(DEFECTO_LABELS).map(([defecto, label]) => (
+                <div key={defecto} className="space-y-2">
+                  <Label htmlFor={defecto} className="text-sm font-medium text-black">
+                    {label}
+                  </Label>
+                  <Input
+                    id={defecto}
+                    type="number"
+                    min="0"
+                    value={defectos[defecto as Defecto]}
+                    onChange={(e) => handleDefectoChange(defecto as Defecto, e.target.value)}
+                    onFocus={() => handleDefectoFocus(defecto as Defecto)}
+                    onBlur={() => handleDefectoBlur(defecto as Defecto)}
+                    className="bg-white border-gray-300 text-black"
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Submit Button */}
+          <Button
+            type="submit"
+            disabled={registrarMutation.isPending || !capturedPhoto}
+            className="w-full bg-primary hover:bg-primary/90 text-white py-6 text-base font-semibold"
+          >
+            {registrarMutation.isPending ? (
+              <>Registrando...</>
+            ) : (
+              <>
+                <CheckCircle className="mr-2 h-5 w-5" />
+                Registrar Control
+              </>
+            )}
+          </Button>
+        </form>
       </div>
     </div>
   );
 }
-
-const DefectoInput = memo(function DefectoInput({ 
-  defecto, 
-  value, 
-  onChange,
-  onFocus,
-  onBlur
-}: { 
-  defecto: { value: Defecto; label: string }; 
-  value: string; 
-  onChange: (defecto: Defecto, value: string) => void;
-  onFocus: (defecto: Defecto, value: string) => void;
-  onBlur: (defecto: Defecto, value: string) => void;
-}) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(defecto.value, e.target.value);
-  };
-
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    onFocus(defecto.value, e.target.value);
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    onBlur(defecto.value, e.target.value);
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-2 sm:gap-3">
-      <Label htmlFor={defecto.value} className="flex-1 font-normal text-xs sm:text-sm text-black break-words">
-        {defecto.label}
-      </Label>
-      <Input
-        id={defecto.value}
-        type="number"
-        min="0"
-        value={value}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        className="w-16 sm:w-20 bg-white border-gray-300 text-black h-9 sm:h-10 text-sm flex-shrink-0"
-        placeholder="0"
-      />
-    </div>
-  );
-});
-
-const EmpacadorSelector = memo(function EmpacadorSelector({
-  empacadorId,
-  setEmpacadorId,
-  empacadores,
-  isLoadingEmpacadores,
-}: {
-  empacadorId: string;
-  setEmpacadorId: (id: string) => void;
-  empacadores?: Array<{ id: string; identificador: string; color: string; activo: boolean }>;
-  isLoadingEmpacadores: boolean;
-}) {
-  return (
-    <div className="space-y-1.5 sm:space-y-2">
-      <Label htmlFor="empacador" className="text-xs sm:text-sm text-black">Empacador</Label>
-      {isLoadingEmpacadores ? (
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Cargando empacadores...
-        </div>
-      ) : !empacadores || empacadores.length === 0 ? (
-        <Alert>
-          <AlertDescription className="text-xs sm:text-sm">
-            No hay empacadores configurados. Por favor, configure al menos un empacador en la sección de Configuración.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          <Select value={empacadorId} onValueChange={setEmpacadorId}>
-            <SelectTrigger id="empacador" className="bg-white border-gray-300 text-black h-10 sm:h-11 text-sm">
-              <SelectValue placeholder="Seleccione el empacador" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-gray-300">
-              {empacadores.map((empacador) => (
-                <SelectItem key={empacador.id} value={empacador.id}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="h-4 w-4 rounded-full border border-gray-300 flex-shrink-0"
-                      style={{ backgroundColor: empacador.color }}
-                    />
-                    <span className="truncate">{empacador.identificador}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {empacadorId && (
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-              <div
-                className="h-4 w-4 sm:h-5 sm:w-5 rounded-full border border-gray-300 flex-shrink-0"
-                style={{
-                  backgroundColor: empacadores.find((e) => e.id === empacadorId)?.color,
-                }}
-              />
-              <span className="truncate">Seleccionado: {empacadores.find((e) => e.id === empacadorId)?.identificador}</span>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-});
-
-const ControladorSelector = memo(function ControladorSelector({
-  controladorId,
-  setControladorId,
-  controladores,
-  isLoadingControladores,
-}: {
-  controladorId: string;
-  setControladorId: (id: string) => void;
-  controladores?: Array<{ id: string; nombre: string; activo: boolean }>;
-  isLoadingControladores: boolean;
-}) {
-  return (
-    <div className="space-y-1.5 sm:space-y-2">
-      <Label htmlFor="controlador" className="text-xs sm:text-sm text-black font-semibold">
-        Controlador <span className="text-destructive">*</span>
-      </Label>
-      {isLoadingControladores ? (
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Cargando controladores...
-        </div>
-      ) : !controladores || controladores.length === 0 ? (
-        <Alert>
-          <AlertDescription className="text-xs sm:text-sm">
-            No hay controladores configurados. Por favor, configure al menos un controlador en la sección de Configuración.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <>
-          <Select value={controladorId} onValueChange={setControladorId}>
-            <SelectTrigger id="controlador" className="bg-white border-gray-300 text-black h-10 sm:h-11 text-sm">
-              <SelectValue placeholder="Seleccione el controlador" />
-            </SelectTrigger>
-            <SelectContent className="bg-white border-gray-300">
-              {controladores.map((controlador) => (
-                <SelectItem key={controlador.id} value={controlador.id}>
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="h-4 w-4 text-primary" />
-                    <span className="truncate">{controlador.nombre}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {controladorId && (
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
-              <UserCheck className="h-4 w-4 text-primary" />
-              <span className="truncate">Seleccionado: {controladores.find((c) => c.id === controladorId)?.nombre}</span>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-});

@@ -44,6 +44,10 @@ export interface Empacador {
 }
 export type ExternalBlob = Uint8Array;
 export interface Filtro {
+  'sortBy' : [] | [string],
+  'sortOrder' : [] | [string],
+  'page' : bigint,
+  'pageSize' : bigint,
   'empacadorId' : [] | [string],
   'fechaInicio' : [] | [bigint],
   'defecto' : [] | [Defecto],
@@ -150,7 +154,10 @@ export interface _SERVICE {
   >,
   'obtenerDetalleMuestra' : ActorMethod<[string], [] | [MuestraPlanilla]>,
   'obtenerEmpacadoresActivos' : ActorMethod<[], Array<Empacador>>,
-  'obtenerHistorial' : ActorMethod<[], Array<ControlCalidadConControlador>>,
+  'obtenerHistorial' : ActorMethod<
+    [bigint, bigint, [] | [string], [] | [string]],
+    Array<ControlCalidadConControlador>
+  >,
   'obtenerIdentificadoresParaConvertir' : ActorMethod<
     [],
     Array<[string, boolean]>

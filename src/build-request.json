@@ -1,36 +1,173 @@
 {
   "kind": "build_request",
-  "title": "Set jonysued1@hotmail.com and jonatan@rimonim.com.ar as administrators",
+  "title": "Optimize application performance",
   "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-6",
-      "text": "Configure the backend to assign admin role to the principals associated with email addresses jonysued1@hotmail.com and jonatan@rimonim.com.ar. This should be done either through initialization logic or by providing the principal IDs for these email addresses so they can be set as administrators using the existing setUserRole method.",
-      "target": "backend",
+      "id": "REQ-13",
+      "text": "Implement code splitting and lazy loading for route components (RegistroControl, Reportes, Historial, ConfiguracionEmpacadores, ConfiguracionControladores, GestionUsuarios, RolesUsuarios) in App.tsx using React.lazy() and Suspense to reduce initial bundle size and improve load times",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-user-final"
+          "msg-last"
         ],
         "quotes": [
-          "colocar el email jonysued1@hotmail.com y jonatan@rimonim.com.ar como administrador"
+          "optimizar la aplicacion"
         ]
       },
       "acceptanceCriteria": [
-        "The principals corresponding to jonysued1@hotmail.com and jonatan@rimonim.com.ar have admin role assigned",
-        "These users can access all admin-only features including user management and role assignment",
-        "The role assignment persists across canister upgrades"
+        "All route components are lazy loaded using React.lazy()",
+        "Suspense boundary is implemented with a loading fallback",
+        "Initial bundle size is reduced by at least 30%",
+        "Route transitions show loading states appropriately"
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "text": "Optimize React Query cache configuration by adjusting staleTime and cacheTime settings in useQueries.ts hooks to reduce unnecessary backend refetches for empacadores, controladores, and quality control records that change infrequently",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "optimizar la aplicacion"
+        ]
+      },
+      "acceptanceCriteria": [
+        "staleTime is set appropriately for each query type based on data volatility",
+        "Unnecessary refetches are eliminated for configuration data",
+        "Network requests are reduced by at least 40% during typical usage",
+        "Data freshness is maintained for critical paths like control registration"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "text": "Implement virtual scrolling or pagination for the Historial page table to handle large datasets efficiently, preventing performance degradation when displaying hundreds of control records",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "optimizar la aplicacion"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Table renders smoothly with 500+ records without lag",
+        "Only visible rows are rendered in the DOM",
+        "Scrolling performance maintains 60fps",
+        "Filtering and search functionality continues to work correctly"
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "text": "Optimize image handling by implementing lazy loading for control record images in Historial and image compression before upload in RegistroControl, reducing page weight and improving load times",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "optimizar la aplicacion"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Images are lazy loaded with loading attribute or intersection observer",
+        "Uploaded images are compressed to maximum 1MB before storage",
+        "Image quality remains acceptable for quality control purposes",
+        "Page load time improves by at least 50% when viewing records with images"
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "text": "Memoize expensive computations in Reportes page chart data transformations and statistics calculations using useMemo to prevent unnecessary recalculations on re-renders",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "optimizar la aplicacion"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Chart data transformations are wrapped in useMemo with proper dependencies",
+        "Statistics calculations only run when source data changes",
+        "Render time for Reportes page is reduced by at least 30%",
+        "UI remains responsive during filter changes"
+      ]
+    },
+    {
+      "id": "REQ-18",
+      "text": "Optimize backend query performance by implementing efficient filtering and pagination in main.mo for getControlsBy* methods, reducing data transfer and processing time for large datasets",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "optimizar la aplicacion"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Backend queries support limit and offset parameters",
+        "Filtering is performed at the backend level before returning results",
+        "Response time for filtered queries is under 500ms for datasets with 1000+ records",
+        "Memory usage remains stable during large query operations"
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "text": "Implement debouncing for search input fields in Historial and other pages to reduce the frequency of query executions and improve perceived performance",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "optimizar la aplicacion"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Search inputs are debounced with 300ms delay",
+        "Number of query executions is reduced by at least 80% during typing",
+        "Search results appear smoothly without lag",
+        "UX remains natural without noticeable input delay"
+      ]
+    },
+    {
+      "id": "REQ-20",
+      "text": "Minimize re-renders in Header component by memoizing the menuItems array and navigation elements using useMemo, preventing unnecessary recalculations when user role or authentication state hasn't changed",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-last"
+        ],
+        "quotes": [
+          "optimizar la aplicacion"
+        ]
+      },
+      "acceptanceCriteria": [
+        "menuItems array is memoized with proper dependencies",
+        "Header component re-renders only when authentication or role changes",
+        "Navigation remains responsive and functional",
+        "Performance profiling shows reduced render count"
       ]
     }
   ],
   "constraints": [
-    "Use the existing role management system with getUserRoles and setUserRole methods",
-    "Do not modify the authentication mechanism (Internet Identity)",
-    "Preserve existing user roles and data"
+    "Do not modify immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui",
+    "Maintain single-actor backend architecture in main.mo",
+    "Preserve existing functionality while implementing optimizations",
+    "Ensure all optimizations are backward compatible with existing data"
   ],
   "nonGoals": [
-    "Creating a new authentication system",
-    "Implementing email-based login",
-    "Changing the role-based access control structure"
+    "Changing the UI design or layout",
+    "Adding new features or functionality",
+    "Modifying authentication or role management logic",
+    "Rewriting components in different frameworks",
+    "Implementing server-side rendering or external caching services"
   ],
   "imageRequirements": {
     "required": [],

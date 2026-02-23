@@ -121,7 +121,7 @@ export function useObtenerHistorial() {
     queryFn: async () => {
       if (!actor) return [];
       try {
-        const controles = await actor.obtenerHistorial();
+        const controles = await actor.obtenerHistorial(BigInt(0), BigInt(10000), null, null);
         
         // Sort by date descending, then by lote (time HH:MM:SS) ascending
         return controles.sort((a, b) => {
@@ -137,8 +137,8 @@ export function useObtenerHistorial() {
       }
     },
     enabled: !!actor && !isFetching,
-    staleTime: 30000,
-    gcTime: 300000,
+    staleTime: 60000,
+    gcTime: 600000,
   });
 }
 
@@ -163,8 +163,8 @@ export function useObtenerControlesFiltrados(filtro: Filtro) {
       }
     },
     enabled: !!actor && !isFetching,
-    staleTime: 30000,
-    gcTime: 300000,
+    staleTime: 60000,
+    gcTime: 600000,
   });
 }
 
@@ -183,8 +183,8 @@ export function useObtenerControl(id: string) {
       }
     },
     enabled: !!actor && !isFetching && !!id,
-    staleTime: 60000,
-    gcTime: 300000,
+    staleTime: 120000,
+    gcTime: 600000,
   });
 }
 
@@ -211,8 +211,8 @@ export function useObtenerMuestrasParaPlanilla(fechaInicio: string, fechaFin: st
       }
     },
     enabled: !!actor && !isFetching && !!fechaInicio && !!fechaFin,
-    staleTime: 30000,
-    gcTime: 300000,
+    staleTime: 60000,
+    gcTime: 600000,
   });
 }
 
@@ -231,8 +231,8 @@ export function useObtenerDetalleMuestra(id: string | null) {
       }
     },
     enabled: !!actor && !isFetching && !!id,
-    staleTime: 60000,
-    gcTime: 300000,
+    staleTime: 120000,
+    gcTime: 600000,
   });
 }
 
@@ -262,8 +262,8 @@ export function useObtenerEmpacadoresActivos() {
       }
     },
     enabled: !!actor && !isFetching,
-    staleTime: 60000,
-    gcTime: 600000,
+    staleTime: 300000,
+    gcTime: 900000,
   });
 }
 
@@ -287,10 +287,7 @@ export function useAgregarEmpacador() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'] });
-    },
-    onError: (error: any) => {
-      console.error('Error al agregar empacador:', error);
+      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'], type: 'active' });
     },
   });
 }
@@ -315,15 +312,7 @@ export function useModificarEmpacador() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
-      await queryClient.invalidateQueries({ queryKey: ['historial'] });
-      await queryClient.invalidateQueries({ queryKey: ['controles-filtrados'] });
-      await queryClient.invalidateQueries({ queryKey: ['reporte-diario'] });
-      await queryClient.invalidateQueries({ queryKey: ['reportes-rango'] });
-      await queryClient.invalidateQueries({ queryKey: ['muestras-planilla'] });
-      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'] });
-    },
-    onError: (error: any) => {
-      console.error('Error al modificar empacador:', error);
+      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'], type: 'active' });
     },
   });
 }
@@ -335,23 +324,11 @@ export function useEliminarEmpacador() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!actor) throw new Error('Actor no disponible');
-      
-      try {
-        const resultId = await actor.eliminarEmpacador(id);
-        return resultId;
-      } catch (error: any) {
-        if (error?.message) {
-          throw new Error(error.message);
-        }
-        throw error;
-      }
+      return await actor.eliminarEmpacador(id);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'] });
-    },
-    onError: (error: any) => {
-      console.error('Error al eliminar empacador:', error);
+      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'], type: 'active' });
     },
   });
 }
@@ -365,18 +342,15 @@ export function useObtenerControladoresActivos() {
       if (!actor) return [];
       try {
         const controladores = await actor.obtenerControladoresActivos();
-        
-        return controladores.sort((a, b) => {
-          return a.nombre.localeCompare(b.nombre, 'es');
-        });
+        return controladores.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
       } catch (error) {
         console.error('Error obteniendo controladores activos:', error);
         return [];
       }
     },
     enabled: !!actor && !isFetching,
-    staleTime: 60000,
-    gcTime: 600000,
+    staleTime: 300000,
+    gcTime: 900000,
   });
 }
 
@@ -385,7 +359,7 @@ export function useAgregarControlador() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ nombre }: { nombre: string }) => {
+    mutationFn: async (nombre: string) => {
       if (!actor) throw new Error('Actor no disponible');
       
       try {
@@ -400,10 +374,7 @@ export function useAgregarControlador() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['controladores-activos'] });
-    },
-    onError: (error: any) => {
-      console.error('Error al agregar controlador:', error);
+      await queryClient.refetchQueries({ queryKey: ['controladores-activos'], type: 'active' });
     },
   });
 }
@@ -428,15 +399,7 @@ export function useModificarControlador() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
-      await queryClient.invalidateQueries({ queryKey: ['historial'] });
-      await queryClient.invalidateQueries({ queryKey: ['controles-filtrados'] });
-      await queryClient.invalidateQueries({ queryKey: ['reporte-diario'] });
-      await queryClient.invalidateQueries({ queryKey: ['reportes-rango'] });
-      await queryClient.invalidateQueries({ queryKey: ['muestras-planilla'] });
-      await queryClient.refetchQueries({ queryKey: ['controladores-activos'] });
-    },
-    onError: (error: any) => {
-      console.error('Error al modificar controlador:', error);
+      await queryClient.refetchQueries({ queryKey: ['controladores-activos'], type: 'active' });
     },
   });
 }
@@ -448,23 +411,11 @@ export function useEliminarControlador() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!actor) throw new Error('Actor no disponible');
-      
-      try {
-        const resultId = await actor.eliminarControlador(id);
-        return resultId;
-      } catch (error: any) {
-        if (error?.message) {
-          throw new Error(error.message);
-        }
-        throw error;
-      }
+      return await actor.eliminarControlador(id);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['controladores-activos'] });
-    },
-    onError: (error: any) => {
-      console.error('Error al eliminar controlador:', error);
+      await queryClient.refetchQueries({ queryKey: ['controladores-activos'], type: 'active' });
     },
   });
 }
@@ -475,17 +426,13 @@ export function useGetCallerUserProfile() {
   const query = useQuery<UserProfile | null>({
     queryKey: ['currentUserProfile'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor no disponible');
-      try {
-        return await actor.getCallerUserProfile();
-      } catch (error) {
-        console.error('Error obteniendo perfil de usuario:', error);
-        return null;
-      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getCallerUserProfile();
     },
     enabled: !!actor && !actorFetching,
     retry: false,
-    staleTime: 300000,
+    staleTime: 180000,
+    gcTime: 600000,
   });
 
   return {
@@ -504,48 +451,33 @@ export function useSaveCallerUserProfile() {
       if (!actor) throw new Error('Actor no disponible');
       return await actor.saveCallerUserProfile(profile);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
+      await queryClient.refetchQueries({ queryKey: ['currentUserProfile'], type: 'active' });
     },
   });
 }
 
 export function useGetCallerUserRole() {
-  const { actor, isFetching } = useActor();
+  const { actor, isFetching: actorFetching } = useActor();
 
-  return useQuery<UserRole>({
+  const query = useQuery<UserRole>({
     queryKey: ['currentUserRole'],
     queryFn: async () => {
-      if (!actor) throw new Error('Actor no disponible');
-      try {
-        return await actor.getCallerUserRole();
-      } catch (error) {
-        console.error('Error obteniendo rol de usuario:', error);
-        throw error;
-      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getCallerUserRole();
     },
-    enabled: !!actor && !isFetching,
-    staleTime: 300000,
+    enabled: !!actor && !actorFetching,
+    retry: false,
+    staleTime: 180000,
+    gcTime: 600000,
   });
-}
 
-export function useIsCallerAdmin() {
-  const { actor, isFetching } = useActor();
-
-  return useQuery<boolean>({
-    queryKey: ['isCallerAdmin'],
-    queryFn: async () => {
-      if (!actor) return false;
-      try {
-        return await actor.isCallerAdmin();
-      } catch (error) {
-        console.error('Error verificando si es admin:', error);
-        return false;
-      }
-    },
-    enabled: !!actor && !isFetching,
-    staleTime: 300000,
-  });
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+    isFetched: !!actor && query.isFetched,
+  };
 }
 
 export function useGetAllUserRoles() {
@@ -556,25 +488,15 @@ export function useGetAllUserRoles() {
     queryFn: async () => {
       if (!actor) return [];
       try {
-        const users = await actor.getAllUserRoles();
-        // Sort by role (admin first) then by name
-        return users.sort((a, b) => {
-          const roleOrder = { admin: 0, user: 1, guest: 2 };
-          const roleCompare = roleOrder[a.role] - roleOrder[b.role];
-          if (roleCompare !== 0) return roleCompare;
-          
-          const aName = a.profile?.name || a.principal.toString();
-          const bName = b.profile?.name || b.principal.toString();
-          return aName.localeCompare(bName, 'es');
-        });
+        return await actor.getAllUserRoles();
       } catch (error) {
         console.error('Error obteniendo roles de usuarios:', error);
         return [];
       }
     },
     enabled: !!actor && !isFetching,
-    staleTime: 60000,
-    gcTime: 300000,
+    staleTime: 120000,
+    gcTime: 600000,
   });
 }
 
@@ -587,10 +509,9 @@ export function useAssignUserRole() {
       if (!actor) throw new Error('Actor no disponible');
       return await actor.setUserRole(user, role);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allUserRoles'] });
-      queryClient.invalidateQueries({ queryKey: ['currentUserRole'] });
-      queryClient.invalidateQueries({ queryKey: ['isCallerAdmin'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['allUserRoles'] });
+      await queryClient.refetchQueries({ queryKey: ['allUserRoles'], type: 'active' });
     },
   });
 }

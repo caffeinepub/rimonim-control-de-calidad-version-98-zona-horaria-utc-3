@@ -222,9 +222,7 @@ function FormularioControlador({
           description: `El controlador "${nombreTrimmed}" ha sido actualizado`,
         });
       } else {
-        await agregarMutation.mutateAsync({
-          nombre: nombreTrimmed,
-        });
+        await agregarMutation.mutateAsync(nombreTrimmed);
         toast.success('Controlador agregado correctamente', {
           description: `El controlador "${nombreTrimmed}" está listo para usar`,
         });

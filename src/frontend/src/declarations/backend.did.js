@@ -59,6 +59,10 @@ export const Controlador = IDL.Record({
   'nombre' : IDL.Text,
 });
 export const Filtro = IDL.Record({
+  'sortBy' : IDL.Opt(IDL.Text),
+  'sortOrder' : IDL.Opt(IDL.Text),
+  'page' : IDL.Nat,
+  'pageSize' : IDL.Nat,
   'empacadorId' : IDL.Opt(IDL.Text),
   'fechaInicio' : IDL.Opt(IDL.Int),
   'defecto' : IDL.Opt(Defecto),
@@ -185,7 +189,7 @@ export const idlService = IDL.Service({
     ),
   'obtenerEmpacadoresActivos' : IDL.Func([], [IDL.Vec(Empacador)], ['query']),
   'obtenerHistorial' : IDL.Func(
-      [],
+      [IDL.Nat, IDL.Nat, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
       [IDL.Vec(ControlCalidadConControlador)],
       ['query'],
     ),
@@ -285,6 +289,10 @@ export const idlFactory = ({ IDL }) => {
     'nombre' : IDL.Text,
   });
   const Filtro = IDL.Record({
+    'sortBy' : IDL.Opt(IDL.Text),
+    'sortOrder' : IDL.Opt(IDL.Text),
+    'page' : IDL.Nat,
+    'pageSize' : IDL.Nat,
     'empacadorId' : IDL.Opt(IDL.Text),
     'fechaInicio' : IDL.Opt(IDL.Int),
     'defecto' : IDL.Opt(Defecto),
@@ -415,7 +423,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'obtenerEmpacadoresActivos' : IDL.Func([], [IDL.Vec(Empacador)], ['query']),
     'obtenerHistorial' : IDL.Func(
-        [],
+        [IDL.Nat, IDL.Nat, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
         [IDL.Vec(ControlCalidadConControlador)],
         ['query'],
       ),

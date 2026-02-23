@@ -1,16 +1,107 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 9,
+  "projectStateVersion": 17,
   "summary": "Web application with admin user role management system",
   "architectural_notes": [],
-  "known_issues": [],
-  "isFixRequest": false,
+  "known_issues": [
+    "The Roles navigation tab is still not appearing in the UI in version 105 despite multiple implementation attempts",
+    "Users unable to access the application in version 106"
+  ],
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-integrate-the-role-assignment-ui-with-the-existing-backend-role-management-system-using-the-getuserroles-and-setuserrole-methods-to-fetch-and-update-user-roles-by-principal-id",
       "title": "Integrate the role assignment UI with the existing backend role management system, using the getUserRoles and setUserRole methods to fetch and update user roles by Principal ID",
       "reqIds": [
         "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-configure-the-app-component-to-set-registro-registration-as-the-default-active-tab-when-the-application-first-opens-ensuring-users-always-land-on-the-registration-tab-regardless-of-previous-session-state",
+      "title": "Configure the App component to set 'registro' (Registration) as the default active tab when the application first opens, ensuring users always land on the Registration tab regardless of previous session state",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-that-the-roles-navigation-tab-in-the-header-component-is-visible-to-users-with-admin-role-and-properly-linked-to-the-roles-route-ensure-the-tab-renders-alongside-existing-tabs-registro-reportes-historial-configuracion-usuarios",
+      "title": "Verify that the 'Roles' navigation tab in the Header component is visible to users with admin role and properly linked to the '/roles' route. Ensure the tab renders alongside existing tabs (registro, reportes, historial, configuracion, usuarios).",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-confirm-that-the-app-component-routing-includes-the-roles-route-that-renders-the-rolesusuarios-page-component-when-the-roles-tab-is-selected",
+      "title": "Confirm that the App component routing includes the '/roles' route that renders the RolesUsuarios page component when the roles tab is selected.",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-debug-and-fix-why-the-roles-tab-is-not-appearing-in-the-ui-despite-previous-implementation-attempts-check-role-detection-logic-authentication-state-and-conditional-rendering-conditions-in-the-header-component",
+      "title": "Debug and fix why the Roles tab is not appearing in the UI despite previous implementation attempts. Check role detection logic, authentication state, and conditional rendering conditions in the Header component.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-code-splitting-and-lazy-loading-for-route-components-registrocontrol-reportes-historial-configuracionempacadores-configuracioncontroladores-gestionusuarios-rolesusuarios-in-app-tsx-using-react-lazy-and-suspense-to-reduce-initial-bundle-size-and-improve-load-times",
+      "title": "Implement code splitting and lazy loading for route components (RegistroControl, Reportes, Historial, ConfiguracionEmpacadores, ConfiguracionControladores, GestionUsuarios, RolesUsuarios) in App.tsx using React.lazy() and Suspense to reduce initial bundle size and improve load times",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-optimize-react-query-cache-configuration-by-adjusting-staletime-and-cachetime-settings-in-usequeries-ts-hooks-to-reduce-unnecessary-backend-refetches-for-empacadores-controladores-and-quality-control-records-that-change-infrequently",
+      "title": "Optimize React Query cache configuration by adjusting staleTime and cacheTime settings in useQueries.ts hooks to reduce unnecessary backend refetches for empacadores, controladores, and quality control records that change infrequently",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-virtual-scrolling-or-pagination-for-the-historial-page-table-to-handle-large-datasets-efficiently-preventing-performance-degradation-when-displaying-hundreds-of-control-records",
+      "title": "Implement virtual scrolling or pagination for the Historial page table to handle large datasets efficiently, preventing performance degradation when displaying hundreds of control records",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-optimize-image-handling-by-implementing-lazy-loading-for-control-record-images-in-historial-and-image-compression-before-upload-in-registrocontrol-reducing-page-weight-and-improving-load-times",
+      "title": "Optimize image handling by implementing lazy loading for control record images in Historial and image compression before upload in RegistroControl, reducing page weight and improving load times",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-memoize-expensive-computations-in-reportes-page-chart-data-transformations-and-statistics-calculations-using-usememo-to-prevent-unnecessary-recalculations-on-re-renders",
+      "title": "Memoize expensive computations in Reportes page chart data transformations and statistics calculations using useMemo to prevent unnecessary recalculations on re-renders",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-debouncing-for-search-input-fields-in-historial-and-other-pages-to-reduce-the-frequency-of-query-executions-and-improve-perceived-performance",
+      "title": "Implement debouncing for search input fields in Historial and other pages to reduce the frequency of query executions and improve perceived performance",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-minimize-re-renders-in-header-component-by-memoizing-the-menuitems-array-and-navigation-elements-using-usememo-preventing-unnecessary-recalculations-when-user-role-or-authentication-state-hasn-t-changed",
+      "title": "Minimize re-renders in Header component by memoizing the menuItems array and navigation elements using useMemo, preventing unnecessary recalculations when user role or authentication state hasn't changed",
+      "reqIds": [
+        "REQ-20"
       ],
       "version": 1
     }
@@ -59,6 +150,42 @@
       "summary": "Configure the backend to assign admin role to the principals associated with email addresses jonysued1@hotmail.com and jonatan@rimonim.com.ar. This should be done either through initialization logic or by providing the principal IDs for these email addresses so they can be set as administrators using the existing setUserRole method.",
       "reqIds": [
         "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Add a 'Roles' navigation tab in the Header component that is visible only to users with admin role, positioned alongside existing tabs (registro, reportes, historial, configuracion, usuarios). The tab should link to the '/roles' route.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Update the App component routing to include the '/roles' route that renders the existing RolesUsuarios page component when accessed.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Set the default tab when opening the application to always be 'Registro' (registration)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Optimize application performance",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Optimize backend query performance by implementing efficient filtering and pagination in main.mo for getControlsBy* methods, reducing data transfer and processing time for large datasets",
+      "reqIds": [
+        "REQ-18"
       ],
       "status": "pending"
     }

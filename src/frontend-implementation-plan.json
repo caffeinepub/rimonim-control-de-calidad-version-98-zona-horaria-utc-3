@@ -1,6 +1,131 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Set jonysued1@hotmail.com and jonatan@rimonim.com.ar as administrators",
-  "requirements": []
+  "title": "Optimize application performance",
+  "requirements": [
+    {
+      "id": "REQ-13",
+      "summary": "Implement code splitting and lazy loading for route components to reduce initial bundle size",
+      "acceptanceCriteria": [
+        "All route components are lazy loaded using React.lazy()",
+        "Suspense boundary is implemented with a loading fallback",
+        "Initial bundle size is reduced by at least 30%",
+        "Route transitions show loading states appropriately"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Replace direct imports of route components (RegistroControl, Reportes, Historial, ConfiguracionEmpacadores, ConfiguracionControladores, GestionUsuarios, RolesUsuarios) with React.lazy() dynamic imports. Wrap the Routes component with Suspense and provide a loading fallback UI that matches the application style. Ensure all lazy-loaded components are properly typed and error boundaries handle load failures gracefully."
+        }
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "summary": "Optimize React Query cache configuration to reduce unnecessary backend refetches",
+      "acceptanceCriteria": [
+        "staleTime is set appropriately for each query type based on data volatility",
+        "Unnecessary refetches are eliminated for configuration data",
+        "Network requests are reduced by at least 40% during typical usage",
+        "Data freshness is maintained for critical paths like control registration"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Adjust staleTime and cacheTime settings for each query hook based on data volatility. For configuration data (empacadores, controladores), set staleTime to 5-10 minutes since they change infrequently. For user profiles, set staleTime to 2-3 minutes. For control records and reports, use shorter staleTime (30 seconds to 1 minute) to maintain data freshness. Add gcTime (formerly cacheTime) of 10-15 minutes for configuration data. Document the rationale for each setting in comments."
+        }
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "summary": "Implement virtual scrolling or pagination for Historial page table to handle large datasets efficiently",
+      "acceptanceCriteria": [
+        "Table renders smoothly with 500+ records without lag",
+        "Only visible rows are rendered in the DOM",
+        "Scrolling performance maintains 60fps",
+        "Filtering and search functionality continues to work correctly"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Historial.tsx",
+          "operation": "modify",
+          "description": "Implement virtual scrolling using @tanstack/react-virtual or a similar library for the control records table. Configure virtual list with appropriate overscan and estimated item size based on current row height. Ensure filtering, search, and sorting operations work correctly with virtualized rendering. Maintain the existing delete functionality and image preview modals. Add performance monitoring to verify 60fps scrolling. If virtual scrolling proves complex, implement pagination as a fallback with configurable page sizes (25, 50, 100 records)."
+        }
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "summary": "Optimize image handling with lazy loading and compression",
+      "acceptanceCriteria": [
+        "Images are lazy loaded with loading attribute or intersection observer",
+        "Uploaded images are compressed to maximum 1MB before storage",
+        "Image quality remains acceptable for quality control purposes",
+        "Page load time improves by at least 50% when viewing records with images"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Historial.tsx",
+          "operation": "modify",
+          "description": "Add loading='lazy' attribute to all img elements displaying control record photos. Alternatively, implement Intersection Observer for more granular control over image loading. Add a placeholder or skeleton loader that displays while images are loading. Ensure the image modal preview also benefits from lazy loading for thumbnail grids if multiple images are shown."
+        },
+        {
+          "path": "frontend/src/pages/RegistroControl.tsx",
+          "operation": "modify",
+          "description": "Implement client-side image compression before upload using browser-image-compression or canvas-based compression. Configure compression to target maximum 1MB file size while maintaining acceptable quality (e.g., quality setting of 0.8-0.9 for JPEG). Add validation to check file size before and after compression. Display compression progress or status to the user. Verify the component's usage instructions for the camera component and blob-storage component before implementing. Use ExternalBlob.fromBytes() after compression to prepare the file for upload with progress tracking via withUploadProgress()."
+        }
+      ]
+    },
+    {
+      "id": "REQ-17",
+      "summary": "Memoize expensive computations in Reportes page to prevent unnecessary recalculations",
+      "acceptanceCriteria": [
+        "Chart data transformations are wrapped in useMemo with proper dependencies",
+        "Statistics calculations only run when source data changes",
+        "Render time for Reportes page is reduced by at least 30%",
+        "UI remains responsive during filter changes"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Reportes.tsx",
+          "operation": "modify",
+          "description": "Wrap all chart data transformations and statistics calculations in useMemo hooks with proper dependency arrays. Identify expensive operations such as aggregating defect counts by type, calculating percentages, filtering by packer/controller/date, and transforming data for chart libraries. Ensure dependencies include only the minimal required data (e.g., raw report data, active filters). Add React DevTools Profiler measurements to verify render time reduction. Ensure filter changes trigger only necessary recalculations."
+        }
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "summary": "Implement debouncing for search input fields to reduce query frequency",
+      "acceptanceCriteria": [
+        "Search inputs are debounced with 300ms delay",
+        "Number of query executions is reduced by at least 80% during typing",
+        "Search results appear smoothly without lag",
+        "UX remains natural without noticeable input delay"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/Historial.tsx",
+          "operation": "modify",
+          "description": "Implement debouncing for search input fields using a custom useDebounce hook or lodash.debounce with 300ms delay. Apply debouncing to text search inputs that trigger filtering or query refetches. Store the immediate input value in local state for responsive UI updates, while the debounced value triggers actual data fetching. Ensure the debounced search works correctly with other filters (date range, defect type, packer, controller). Test that rapid typing doesn't cause UI lag or excessive network requests."
+        }
+      ]
+    },
+    {
+      "id": "REQ-20",
+      "summary": "Minimize re-renders in Header component by memoizing menuItems and navigation elements",
+      "acceptanceCriteria": [
+        "menuItems array is memoized with proper dependencies",
+        "Header component re-renders only when authentication or role changes",
+        "Navigation remains responsive and functional",
+        "Performance profiling shows reduced render count"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/Header.tsx",
+          "operation": "modify",
+          "description": "Wrap the menuItems array computation in useMemo with dependencies on userRole and isAuthenticated. Memoize the filtered menu items that depend on role-based access. Consider wrapping the entire Header component in React.memo if appropriate. Ensure role badge rendering and navigation link generation are optimized. Use React DevTools Profiler to verify that Header only re-renders when authentication state or user role actually changes, not on every parent component update."
+        }
+      ]
+    }
+  ]
 }
