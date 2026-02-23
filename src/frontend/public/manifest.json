@@ -1,0 +1,68 @@
+{
+  "name": "Rimonim Control de calidad",
+  "short_name": "Rimonim",
+  "description": "Aplicación PWA para control de calidad de granadas Wonderful - Zona horaria UTC-3",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#BFA76F",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/generated/rimonim-ios-icon-60x60.dim_60x60.png",
+      "sizes": "60x60",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/rimonim-ios-icon-76x76.dim_76x76.png",
+      "sizes": "76x76",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/rimonim-ios-icon-120x120.dim_120x120.png",
+      "sizes": "120x120",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/rimonim-ios-icon-152x152.dim_152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/rimonim-ios-icon-167x167.dim_167x167.png",
+      "sizes": "167x167",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/rimonim-ios-icon-180x180.dim_180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/generated/rimonim-ios-icon-180x180.dim_180x180.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/generated/rimonim-ios-splash.dim_1024x1024.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "dir": "ltr",
+  "display_override": ["standalone", "fullscreen"],
+  "iarc_rating_id": ""
+}
