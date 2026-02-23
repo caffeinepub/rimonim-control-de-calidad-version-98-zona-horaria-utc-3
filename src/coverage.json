@@ -1,100 +1,82 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-23T18:39:31.272Z",
+  "generatedAt": "2026-02-23T19:34:59.886Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 8,
-    "implemented": 7,
+    "total": 7,
+    "implemented": 0,
     "items": [
       {
-        "id": "REQ-13",
-        "summary": "Implement code splitting and lazy loading for route components (RegistroControl, Reportes, Historial, ConfiguracionEmpacadores, ConfiguracionControladores, GestionUsuarios, RolesUsuarios) in App.tsx using React.lazy() and Suspense to reduce initial bundle size and improve load times",
-        "status": "implemented",
+        "id": "REQ-40",
+        "summary": "Investigate and identify the root cause preventing the application from starting or functioning after the most recent deployment, checking for JavaScript runtime errors, React rendering failures, query initialization problems, or authentication flow breaks",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/App.tsx",
+          "frontend/src/main.tsx"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-41",
+        "summary": "Verify that the Internet Identity authentication flow in useInternetIdentity.ts initializes correctly and the AuthClient can establish a valid identity without throwing errors or hanging indefinitely",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/pages/Login.tsx"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-42",
+        "summary": "Verify that the backend actor initialization in useActor.ts successfully creates the actor instance with the authenticated identity and can communicate with the backend canister without authorization errors or network failures",
+        "status": "missing",
         "plannedFiles": [
           "frontend/src/App.tsx"
         ],
-        "matchedFiles": [
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-43",
+        "summary": "Check that the App.tsx component renders correctly with all route configurations intact, ensuring that the QueryClient initialization, authentication state management, and role-based access control logic function without causing rendering failures or infinite loading states",
+        "status": "missing",
+        "plannedFiles": [
           "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-14",
-        "summary": "Optimize React Query cache configuration by adjusting staleTime and cacheTime settings in useQueries.ts hooks to reduce unnecessary backend refetches for empacadores, controladores, and quality control records that change infrequently",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts"
         ],
-        "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts"
-        ]
+        "matchedFiles": []
       },
       {
-        "id": "REQ-15",
-        "summary": "Implement virtual scrolling or pagination for the Historial page table to handle large datasets efficiently, preventing performance degradation when displaying hundreds of control records",
-        "status": "implemented",
+        "id": "REQ-44",
+        "summary": "Verify that all React Query hooks in useQueries.ts execute successfully without causing query hanging, infinite refetching, or cache-related errors that prevent data from loading",
+        "status": "missing",
         "plannedFiles": [
-          "frontend/src/pages/Historial.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Historial.tsx"
-        ]
-      },
-      {
-        "id": "REQ-16",
-        "summary": "Optimize image handling by implementing lazy loading for control record images in Historial and image compression before upload in RegistroControl, reducing page weight and improving load times",
-        "status": "implemented",
-        "plannedFiles": [
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/RegistroControl.tsx",
           "frontend/src/pages/Historial.tsx",
-          "frontend/src/pages/RegistroControl.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/Historial.tsx",
-          "frontend/src/pages/RegistroControl.tsx"
-        ]
-      },
-      {
-        "id": "REQ-17",
-        "summary": "Memoize expensive computations in Reportes page chart data transformations and statistics calculations using useMemo to prevent unnecessary recalculations on re-renders",
-        "status": "implemented",
-        "plannedFiles": [
           "frontend/src/pages/Reportes.tsx"
         ],
-        "matchedFiles": [
-          "frontend/src/pages/Reportes.tsx"
-        ]
+        "matchedFiles": []
       },
       {
-        "id": "REQ-18",
-        "summary": "Optimize backend query performance by implementing efficient filtering and pagination in main.mo for getControlsBy* methods, reducing data transfer and processing time for large datasets",
+        "id": "REQ-45",
+        "summary": "Check the backend canister deployment status and health, ensuring the backend actor is deployed correctly, the main.mo module compiles without errors, and the canister is accessible from the frontend",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-19",
-        "summary": "Implement debouncing for search input fields in Historial and other pages to reduce the frequency of query executions and improve perceived performance",
-        "status": "implemented",
+        "id": "REQ-46",
+        "summary": "Fix any critical errors identified during investigation that prevent the application from starting or functioning, implementing targeted fixes that restore core functionality without introducing new regressions",
+        "status": "missing",
         "plannedFiles": [
-          "frontend/src/pages/Historial.tsx"
+          "frontend/src/App.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/components/Header.tsx",
+          "frontend/src/pages/Login.tsx"
         ],
-        "matchedFiles": [
-          "frontend/src/pages/Historial.tsx"
-        ]
-      },
-      {
-        "id": "REQ-20",
-        "summary": "Minimize re-renders in Header component by memoizing the menuItems array and navigation elements using useMemo, preventing unnecessary recalculations when user role or authentication state hasn't changed",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/components/Header.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/components/Header.tsx"
-        ]
+        "matchedFiles": []
       }
     ]
   },
@@ -104,17 +86,6 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/App.tsx",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/components/Header.tsx",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/ConfiguracionControladores.tsx",
-    "frontend/src/pages/Historial.tsx",
-    "frontend/src/pages/RegistroControl.tsx",
-    "frontend/src/pages/Reportes.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

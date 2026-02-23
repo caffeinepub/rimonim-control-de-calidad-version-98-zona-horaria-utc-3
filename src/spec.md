@@ -1,16 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Optimize application performance by implementing code splitting, improving query caching, virtualizing large datasets, optimizing image handling, memoizing expensive computations, and reducing unnecessary re-renders.
+**Goal:** Debug and fix the application failure preventing it from starting or functioning after the most recent deployment.
 
 **Planned changes:**
-- Implement lazy loading for route components using React.lazy() and Suspense
-- Optimize React Query cache settings (staleTime and cacheTime) to reduce unnecessary refetches
-- Add virtual scrolling or pagination for Historial table to handle large datasets
-- Implement lazy loading for images and compression before upload
-- Memoize chart data transformations and statistics in Reportes page
-- Add efficient filtering and pagination to backend queries
-- Implement debouncing for search inputs
-- Memoize menuItems array in Header component to minimize re-renders
+- Investigate and identify root cause of application startup failure (JavaScript errors, React rendering issues, query initialization problems, or authentication breaks)
+- Verify Internet Identity authentication flow initializes correctly without errors or hanging
+- Verify backend actor initialization creates actor instance successfully and communicates with backend canister
+- Check App.tsx renders correctly with proper QueryClient initialization and role-based access control
+- Verify React Query hooks execute without hanging, infinite refetching, or cache errors
+- Check backend canister deployment status and health
+- Fix all identified critical errors that prevent application from starting
 
-**User-visible outcome:** Users will experience faster initial load times, smoother scrolling through large datasets, quicker page transitions, reduced loading times when viewing images, and more responsive search and filtering across the application.
+**User-visible outcome:** The application loads and runs successfully, allowing users to access registration, reports, and history features without errors or blank screens.

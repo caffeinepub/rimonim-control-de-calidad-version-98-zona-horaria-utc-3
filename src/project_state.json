@@ -1,11 +1,15 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 17,
+  "projectStateVersion": 25,
   "summary": "Web application with admin user role management system",
-  "architectural_notes": [],
+  "architectural_notes": [
+    "Versions 106-108 introduced critical bugs; reverted to version 99 which was stable",
+    "Version 109 deployed with version 99 code but displays 'Acceso Denegado / No tiene permisos' error"
+  ],
   "known_issues": [
     "The Roles navigation tab is still not appearing in the UI in version 105 despite multiple implementation attempts",
-    "Users unable to access the application in version 106"
+    "Version 109 shows 'Acceso Denegado - No tiene permisos para acceder a esta sección' error when accessing the application",
+    "Application is not working/starting after the most recent deployment attempt"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -104,6 +108,94 @@
         "REQ-20"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-investigate-and-fix-critical-errors-preventing-the-application-from-functioning-properly-in-version-107-including-checking-console-errors-network-failures-authentication-issues-and-javascript-runtime-errors",
+      "title": "Investigate and fix critical errors preventing the application from functioning properly in version 107, including checking console errors, network failures, authentication issues, and JavaScript runtime errors",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-and-fix-the-lazy-loading-implementation-in-app-tsx-to-ensure-all-route-components-registrocontrol-reportes-historial-configuracionempacadores-configuracioncontroladores-gestionusuarios-rolesusuarios-load-correctly-without-causing-blank-screens-or-routing-failures",
+      "title": "Verify and fix the lazy loading implementation in App.tsx to ensure all route components (RegistroControl, Reportes, Historial, ConfiguracionEmpacadores, ConfiguracionControladores, GestionUsuarios, RolesUsuarios) load correctly without causing blank screens or routing failures",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-review-and-fix-react-query-cache-configuration-in-usequeries-ts-to-prevent-stale-data-issues-infinite-loading-states-or-query-hanging-that-could-be-causing-the-application-to-behave-unreliably",
+      "title": "Review and fix React Query cache configuration in useQueries.ts to prevent stale data issues, infinite loading states, or query hanging that could be causing the application to behave unreliably",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-that-the-backend-actor-initialization-and-authentication-flow-in-useactor-ts-works-reliably-ensuring-the-actor-instance-is-properly-created-and-accessible-to-all-queries-without-causing-authorization-or-connection-failures",
+      "title": "Verify that the backend actor initialization and authentication flow in useActor.ts works reliably, ensuring the actor instance is properly created and accessible to all queries without causing authorization or connection failures",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-check-and-fix-any-issues-with-the-roles-tab-visibility-logic-in-header-tsx-ensuring-the-role-based-conditional-rendering-works-correctly-and-the-tab-appears-for-admin-users-as-intended",
+      "title": "Check and fix any issues with the Roles tab visibility logic in Header.tsx, ensuring the role-based conditional rendering works correctly and the tab appears for admin users as intended",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-all-frontend-code-files-to-their-exact-state-in-version-99-including-all-components-pages-hooks-and-configuration-files",
+      "title": "Restore all frontend code files to their exact state in Version 99, including all components, pages, hooks, and configuration files",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-all-code-splitting-and-lazy-loading-implementations-that-were-added-in-versions-106-108-reverting-to-direct-component-imports-in-app-tsx",
+      "title": "Remove all code splitting and lazy loading implementations that were added in versions 106-108, reverting to direct component imports in App.tsx",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-restore-react-query-cache-configuration-in-usequeries-ts-to-version-99-settings-removing-any-staletime-or-cachetime-optimizations-added-in-later-versions",
+      "title": "Restore React Query cache configuration in useQueries.ts to Version 99 settings, removing any staleTime or cacheTime optimizations added in later versions",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-debug-and-fix-the-acceso-denegado-no-tiene-permisos-para-acceder-a-esta-secci-n-access-denied-you-do-not-have-permissions-to-access-this-section-error-that-prevents-users-from-accessing-the-application-after-version-109-deployment",
+      "title": "Debug and fix the 'Acceso Denegado - No tiene permisos para acceder a esta sección' (Access Denied - You do not have permissions to access this section) error that prevents users from accessing the application after Version 109 deployment",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-that-the-role-assignment-and-access-control-logic-in-app-tsx-correctly-handles-authenticated-users-ensuring-that-users-with-valid-roles-admin-user-guest-can-access-their-permitted-views-without-triggering-false-access-denied-messages",
+      "title": "Verify that the role assignment and access control logic in App.tsx correctly handles authenticated users, ensuring that users with valid roles ('admin', 'user', 'guest') can access their permitted views without triggering false access denied messages",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-investigate-whether-the-version-99-restoration-inadvertently-removed-role-assignments-or-access-control-configurations-that-were-working-in-previous-versions-and-restore-any-missing-user-role-data-if-necessary",
+      "title": "Investigate whether the Version 99 restoration inadvertently removed role assignments or access control configurations that were working in previous versions, and restore any missing user role data if necessary",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -186,6 +278,126 @@
       "summary": "Optimize backend query performance by implementing efficient filtering and pagination in main.mo for getControlsBy* methods, reducing data transfer and processing time for large datasets",
       "reqIds": [
         "REQ-18"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "Audit and optimize the performance of the Historial page table, ensuring virtual scrolling or pagination is working correctly and the page can handle large datasets without freezing or significant lag",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Review and fix image handling in RegistroControl and Historial pages, ensuring image compression, lazy loading, and rendering work correctly without causing memory leaks, excessive bandwidth usage, or display failures",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Test and fix the Reportes page chart rendering and PDF generation functionality, ensuring data transformations are memoized correctly and the page performs smoothly without causing browser slowdowns",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Verify backend data integrity and query performance in main.mo, ensuring all CRUD operations for empacadores, controladores, and control records work correctly and efficiently without data corruption or slow response times",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Check and fix the service worker caching strategy in service-worker.js to ensure offline functionality works correctly without serving stale content or causing cache-related bugs that prevent the app from loading properly",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Restore all backend code files to their exact state in Version 99, including backend/main.mo and any migration files",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Verify that the application loads successfully, all navigation tabs are accessible, and core functionality (registration, reports, history, configuration) works without errors after reverting to Version 99",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Check backend access control initialization in main.mo to ensure authenticated users are properly recognized and not incorrectly rejected due to access control misconfiguration or missing user role assignments",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Investigate and identify the root cause preventing the application from starting or functioning after the most recent deployment, checking for JavaScript runtime errors, React rendering failures, query initialization problems, or authentication flow breaks",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Verify that the Internet Identity authentication flow in useInternetIdentity.ts initializes correctly and the AuthClient can establish a valid identity without throwing errors or hanging indefinitely",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Verify that the backend actor initialization in useActor.ts successfully creates the actor instance with the authenticated identity and can communicate with the backend canister without authorization errors or network failures",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Check that the App.tsx component renders correctly with all route configurations intact, ensuring that the QueryClient initialization, authentication state management, and role-based access control logic function without causing rendering failures or infinite loading states",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Verify that all React Query hooks in useQueries.ts execute successfully without causing query hanging, infinite refetching, or cache-related errors that prevent data from loading",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Check the backend canister deployment status and health, ensuring the backend actor is deployed correctly, the main.mo module compiles without errors, and the canister is accessible from the frontend",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "Fix any critical errors identified during investigation that prevent the application from starting or functioning, implementing targeted fixes that restore core functionality without introducing new regressions",
+      "reqIds": [
+        "REQ-46"
       ],
       "status": "pending"
     }

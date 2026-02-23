@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserCog, Save, AlertCircle, Shield, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { UserRole } from '../backend';
-import { useGetAllUserRoles, useAssignUserRole } from '../hooks/useQueries';
+import { useGetAllUserRoles, useAssignCallerUserRole } from '../hooks/useQueries';
 import { Principal } from '@icp-sdk/core/principal';
 
 const roleLabels: Record<UserRole, string> = {
@@ -33,7 +33,7 @@ const roleDescriptions: Record<UserRole, string> = {
 export default function RolesUsuarios() {
   const { data: users = [], isLoading, isError } = useGetAllUserRoles();
   const [pendingChanges, setPendingChanges] = useState<Map<string, UserRole>>(new Map());
-  const assignUserRole = useAssignUserRole();
+  const assignUserRole = useAssignCallerUserRole();
 
   const handleRoleChange = (principalStr: string, newRole: UserRole) => {
     const newChanges = new Map(pendingChanges);

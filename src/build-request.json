@@ -1,173 +1,134 @@
 {
   "kind": "build_request",
-  "title": "Optimize application performance",
-  "priority": "normal",
+  "title": "Debug and fix application failure after deployment",
+  "projectName": "Rimonim Control",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-13",
-      "text": "Implement code splitting and lazy loading for route components (RegistroControl, Reportes, Historial, ConfiguracionEmpacadores, ConfiguracionControladores, GestionUsuarios, RolesUsuarios) in App.tsx using React.lazy() and Suspense to reduce initial bundle size and improve load times",
-      "target": "frontend",
+      "id": "REQ-40",
+      "text": "Investigate and identify the root cause preventing the application from starting or functioning after the most recent deployment, checking for JavaScript runtime errors, React rendering failures, query initialization problems, or authentication flow breaks",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-last"
+          "msg-latest"
         ],
         "quotes": [
-          "optimizar la aplicacion"
+          "no anda la aplicacion"
         ]
       },
       "acceptanceCriteria": [
-        "All route components are lazy loaded using React.lazy()",
-        "Suspense boundary is implemented with a loading fallback",
-        "Initial bundle size is reduced by at least 30%",
-        "Route transitions show loading states appropriately"
+        "The application loads successfully without blank screens or error states",
+        "All console errors are identified and documented",
+        "The root cause of the application failure is determined"
       ]
     },
     {
-      "id": "REQ-14",
-      "text": "Optimize React Query cache configuration by adjusting staleTime and cacheTime settings in useQueries.ts hooks to reduce unnecessary backend refetches for empacadores, controladores, and quality control records that change infrequently",
+      "id": "REQ-41",
+      "text": "Verify that the Internet Identity authentication flow in useInternetIdentity.ts initializes correctly and the AuthClient can establish a valid identity without throwing errors or hanging indefinitely",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "optimizar la aplicacion"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "staleTime is set appropriately for each query type based on data volatility",
-        "Unnecessary refetches are eliminated for configuration data",
-        "Network requests are reduced by at least 40% during typical usage",
-        "Data freshness is maintained for critical paths like control registration"
+        "AuthClient initializes without errors",
+        "Login flow completes successfully",
+        "Identity state is properly managed and accessible to downstream components"
       ]
     },
     {
-      "id": "REQ-15",
-      "text": "Implement virtual scrolling or pagination for the Historial page table to handle large datasets efficiently, preventing performance degradation when displaying hundreds of control records",
+      "id": "REQ-42",
+      "text": "Verify that the backend actor initialization in useActor.ts successfully creates the actor instance with the authenticated identity and can communicate with the backend canister without authorization errors or network failures",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-latest"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Actor instance is created successfully after authentication",
+        "Backend methods are callable without throwing errors",
+        "Access control initialization completes without errors"
+      ]
+    },
+    {
+      "id": "REQ-43",
+      "text": "Check that the App.tsx component renders correctly with all route configurations intact, ensuring that the QueryClient initialization, authentication state management, and role-based access control logic function without causing rendering failures or infinite loading states",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "optimizar la aplicacion"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "Table renders smoothly with 500+ records without lag",
-        "Only visible rows are rendered in the DOM",
-        "Scrolling performance maintains 60fps",
-        "Filtering and search functionality continues to work correctly"
+        "App component mounts and renders without errors",
+        "QueryClient is properly initialized and accessible to child components",
+        "Role-based views render correctly based on user authentication state",
+        "No infinite loading states or render loops occur"
       ]
     },
     {
-      "id": "REQ-16",
-      "text": "Optimize image handling by implementing lazy loading for control record images in Historial and image compression before upload in RegistroControl, reducing page weight and improving load times",
+      "id": "REQ-44",
+      "text": "Verify that all React Query hooks in useQueries.ts execute successfully without causing query hanging, infinite refetching, or cache-related errors that prevent data from loading",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "optimizar la aplicacion"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "Images are lazy loaded with loading attribute or intersection observer",
-        "Uploaded images are compressed to maximum 1MB before storage",
-        "Image quality remains acceptable for quality control purposes",
-        "Page load time improves by at least 50% when viewing records with images"
+        "All queries initialize and execute without errors",
+        "Data fetching completes successfully for empacadores, controladores, and control records",
+        "No infinite refetching or stale query states occur"
       ]
     },
     {
-      "id": "REQ-17",
-      "text": "Memoize expensive computations in Reportes page chart data transformations and statistics calculations using useMemo to prevent unnecessary recalculations on re-renders",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "optimizar la aplicacion"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Chart data transformations are wrapped in useMemo with proper dependencies",
-        "Statistics calculations only run when source data changes",
-        "Render time for Reportes page is reduced by at least 30%",
-        "UI remains responsive during filter changes"
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "text": "Optimize backend query performance by implementing efficient filtering and pagination in main.mo for getControlsBy* methods, reducing data transfer and processing time for large datasets",
+      "id": "REQ-45",
+      "text": "Check the backend canister deployment status and health, ensuring the backend actor is deployed correctly, the main.mo module compiles without errors, and the canister is accessible from the frontend",
       "target": "backend",
       "source": {
         "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "optimizar la aplicacion"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "Backend queries support limit and offset parameters",
-        "Filtering is performed at the backend level before returning results",
-        "Response time for filtered queries is under 500ms for datasets with 1000+ records",
-        "Memory usage remains stable during large query operations"
+        "Backend canister is successfully deployed",
+        "Motoko code compiles without errors",
+        "Canister is accessible and responds to actor method calls",
+        "Access control initialization completes successfully"
       ]
     },
     {
-      "id": "REQ-19",
-      "text": "Implement debouncing for search input fields in Historial and other pages to reduce the frequency of query executions and improve perceived performance",
-      "target": "frontend",
+      "id": "REQ-46",
+      "text": "Fix any critical errors identified during investigation that prevent the application from starting or functioning, implementing targeted fixes that restore core functionality without introducing new regressions",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "optimizar la aplicacion"
+          "msg-latest"
         ]
       },
       "acceptanceCriteria": [
-        "Search inputs are debounced with 300ms delay",
-        "Number of query executions is reduced by at least 80% during typing",
-        "Search results appear smoothly without lag",
-        "UX remains natural without noticeable input delay"
-      ]
-    },
-    {
-      "id": "REQ-20",
-      "text": "Minimize re-renders in Header component by memoizing the menuItems array and navigation elements using useMemo, preventing unnecessary recalculations when user role or authentication state hasn't changed",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-last"
-        ],
-        "quotes": [
-          "optimizar la aplicacion"
-        ]
-      },
-      "acceptanceCriteria": [
-        "menuItems array is memoized with proper dependencies",
-        "Header component re-renders only when authentication or role changes",
-        "Navigation remains responsive and functional",
-        "Performance profiling shows reduced render count"
+        "All identified critical errors are resolved",
+        "Application starts and loads successfully",
+        "Core functionality (registration, reports, history) is accessible and working",
+        "No new errors or regressions are introduced"
       ]
     }
   ],
   "constraints": [
-    "Do not modify immutable paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui",
-    "Maintain single-actor backend architecture in main.mo",
-    "Preserve existing functionality while implementing optimizations",
-    "Ensure all optimizations are backward compatible with existing data"
+    "Maintain single-actor architecture in backend/main.mo",
+    "Do not modify immutable frontend paths: frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useInternetIdentity.tsx, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, frontend/src/components/ui",
+    "Preserve the Version 99 restoration that was implemented to fix previous bugs",
+    "Do not reintroduce code splitting or lazy loading that caused issues in versions 106-108",
+    "Maintain direct component imports in App.tsx",
+    "Keep React Query cache configuration at Version 99 settings"
   ],
   "nonGoals": [
-    "Changing the UI design or layout",
     "Adding new features or functionality",
-    "Modifying authentication or role management logic",
-    "Rewriting components in different frameworks",
-    "Implementing server-side rendering or external caching services"
+    "Performance optimizations beyond what is needed to fix the failure",
+    "UI or styling improvements",
+    "Implementing new access control rules or role assignments"
   ],
   "imageRequirements": {
     "required": [],

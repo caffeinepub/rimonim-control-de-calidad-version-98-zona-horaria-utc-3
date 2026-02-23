@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
@@ -9,55 +9,27 @@ import { useGetCallerUserRole } from './hooks/useQueries';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Login from './pages/Login';
+import RegistroControl from './pages/RegistroControl';
+import Reportes from './pages/Reportes';
+import Historial from './pages/Historial';
+import ConfiguracionEmpacadores from './pages/ConfiguracionEmpacadores';
+import ConfiguracionControladores from './pages/ConfiguracionControladores';
+import GestionUsuarios from './pages/GestionUsuarios';
+import RolesUsuarios from './pages/RolesUsuarios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserRole } from './backend';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ShieldAlert } from 'lucide-react';
 
-// Lazy load route components for code splitting
-const RegistroControl = lazy(() => import('./pages/RegistroControl'));
-const Reportes = lazy(() => import('./pages/Reportes'));
-const Historial = lazy(() => import('./pages/Historial'));
-const ConfiguracionEmpacadores = lazy(() => import('./pages/ConfiguracionEmpacadores'));
-const ConfiguracionControladores = lazy(() => import('./pages/ConfiguracionControladores'));
-const GestionUsuarios = lazy(() => import('./pages/GestionUsuarios'));
-const RolesUsuarios = lazy(() => import('./pages/RolesUsuarios'));
-
 type View = 'registro' | 'reportes' | 'historial' | 'configuracion' | 'usuarios' | 'roles';
 
-// Loading fallback component
-function PageLoadingFallback() {
-  return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-4">
-        <div className="text-center mb-6">
-          <img 
-            src="/assets/generated/granada-icon-transparent.dim_64x64.png" 
-            alt="Granada" 
-            className="h-16 w-16 mx-auto mb-4" 
-          />
-          <h2 className="text-xl font-bold text-black">Cargando...</h2>
-          <p className="text-sm text-gray-600 mt-2">Por favor espere</p>
-        </div>
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-12 w-full" />
-      </div>
-    </div>
-  );
-}
-
+// Create a single QueryClient instance
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 30000,
-      gcTime: 300000,
-    },
-    mutations: {
-      retry: 0,
+      retry: 2,
     },
   },
 });
@@ -75,10 +47,10 @@ function AppContent() {
   const { data: userRole, isLoading: isLoadingRole, isFetched: isRoleFetched } = useGetCallerUserRole();
 
   useEffect(() => {
-    if (actor) {
+    if (actor && !isActorLoading) {
       setIsInitialLoad(false);
     }
-  }, [actor]);
+  }, [actor, isActorLoading]);
 
   // Check if user has access to current view
   const hasAccessToView = (view: View): boolean => {
@@ -106,9 +78,7 @@ function AppContent() {
   useEffect(() => {
     if (isAuthenticated && userRole && !hasAccessToView(currentView)) {
       // Redirect to first available view
-      if (userRole === UserRole.admin) {
-        setCurrentView('registro');
-      } else if (userRole === UserRole.user) {
+      if (userRole === UserRole.admin || userRole === UserRole.user) {
         setCurrentView('registro');
       } else {
         setCurrentView('reportes');
@@ -117,7 +87,7 @@ function AppContent() {
   }, [isAuthenticated, userRole, currentView]);
 
   // Show loading screen during initial actor initialization
-  if (isInitialLoad && isActorLoading && !actor) {
+  if (isInitialLoad && isActorLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-white">
         <div className="flex-1 flex items-center justify-center p-4">
@@ -188,51 +158,49 @@ function AppContent() {
         userRole={userRole}
       />
       <main className="flex-1 bg-white">
-        <Suspense fallback={<PageLoadingFallback />}>
-          {!hasAccess ? (
-            <div className="min-h-screen bg-white flex items-center justify-center p-4">
-              <div className="max-w-md w-full">
-                <Alert className="border-red-200 bg-red-50">
-                  <ShieldAlert className="h-5 w-5 text-red-600" />
-                  <AlertDescription className="text-sm text-red-800 ml-2">
-                    <strong>Acceso Denegado</strong>
-                    <p className="mt-2">No tiene permisos para acceder a esta sección.</p>
-                    <p className="mt-1 text-xs">
-                      {userRole === UserRole.guest && 'Su rol de "Lectura" solo permite ver Reportes e Historial.'}
-                      {userRole === UserRole.user && 'Su rol de "Carga" permite registrar controles y ver reportes.'}
-                    </p>
-                  </AlertDescription>
-                </Alert>
-              </div>
+        {!hasAccess ? (
+          <div className="min-h-screen bg-white flex items-center justify-center p-4">
+            <div className="max-w-md w-full">
+              <Alert className="border-red-200 bg-red-50">
+                <ShieldAlert className="h-5 w-5 text-red-600" />
+                <AlertDescription className="text-sm text-red-800 ml-2">
+                  <strong>Acceso Denegado</strong>
+                  <p className="mt-2">No tiene permisos para acceder a esta sección.</p>
+                  <p className="mt-1 text-xs">
+                    {userRole === UserRole.guest && 'Su rol de "Lectura" solo permite ver Reportes e Historial.'}
+                    {userRole === UserRole.user && 'Su rol de "Carga" permite registrar controles y ver reportes.'}
+                  </p>
+                </AlertDescription>
+              </Alert>
             </div>
-          ) : (
-            <>
-              {currentView === 'registro' && <RegistroControl />}
-              {currentView === 'reportes' && <Reportes />}
-              {currentView === 'historial' && <Historial userRole={userRole} />}
-              {currentView === 'configuracion' && (
-                <div className="min-h-screen bg-white text-black">
-                  <div className="w-full py-3 sm:py-4 md:py-6 lg:py-8 px-2 sm:px-3 md:px-4">
-                    <Tabs value={configTab} onValueChange={(value) => setConfigTab(value as 'empacadores' | 'controladores')}>
-                      <TabsList className="grid w-full grid-cols-2 mb-4">
-                        <TabsTrigger value="empacadores">Empacadores</TabsTrigger>
-                        <TabsTrigger value="controladores">Controladores</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="empacadores">
-                        <ConfiguracionEmpacadores />
-                      </TabsContent>
-                      <TabsContent value="controladores">
-                        <ConfiguracionControladores />
-                      </TabsContent>
-                    </Tabs>
-                  </div>
+          </div>
+        ) : (
+          <>
+            {currentView === 'registro' && <RegistroControl />}
+            {currentView === 'reportes' && <Reportes />}
+            {currentView === 'historial' && <Historial userRole={userRole} />}
+            {currentView === 'configuracion' && (
+              <div className="min-h-screen bg-white text-black">
+                <div className="w-full py-3 sm:py-4 md:py-6 lg:py-8 px-2 sm:px-3 md:px-4">
+                  <Tabs value={configTab} onValueChange={(value) => setConfigTab(value as 'empacadores' | 'controladores')}>
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                      <TabsTrigger value="empacadores">Empacadores</TabsTrigger>
+                      <TabsTrigger value="controladores">Controladores</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="empacadores">
+                      <ConfiguracionEmpacadores />
+                    </TabsContent>
+                    <TabsContent value="controladores">
+                      <ConfiguracionControladores />
+                    </TabsContent>
+                  </Tabs>
                 </div>
-              )}
-              {currentView === 'usuarios' && <GestionUsuarios />}
-              {currentView === 'roles' && <RolesUsuarios />}
-            </>
-          )}
-        </Suspense>
+              </div>
+            )}
+            {currentView === 'usuarios' && <GestionUsuarios />}
+            {currentView === 'roles' && <RolesUsuarios />}
+          </>
+        )}
       </main>
       <Footer />
     </div>

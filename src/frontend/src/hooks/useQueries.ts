@@ -11,20 +11,11 @@ export function useObtenerProximoIdentificador() {
   return useQuery<string>({
     queryKey: ['proximo-identificador'],
     queryFn: async () => {
-      if (!actor) return '00:00:00';
-      try {
-        return await actor.obtenerProximoIdentificador();
-      } catch (error) {
-        console.error('Error obteniendo próximo identificador:', error);
-        return '00:00:00';
-      }
+      if (!actor) throw new Error('Actor no disponible');
+      return await actor.obtenerProximoIdentificador();
     },
     enabled: !!actor && !isFetching,
-    staleTime: 0,
-    gcTime: 10000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 }
 
@@ -72,12 +63,8 @@ export function useRegistrarControl() {
       
       return { id, sampleTime, fecha };
     },
-    onSuccess: async () => {
-      // Immediate invalidation and refetch for next identifier
-      await queryClient.invalidateQueries({ queryKey: ['proximo-identificador'] });
-      await queryClient.refetchQueries({ queryKey: ['proximo-identificador'], type: 'active' });
-      
-      // Invalidate all data queries
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['proximo-identificador'] });
       queryClient.invalidateQueries({ queryKey: ['historial'] });
       queryClient.invalidateQueries({ queryKey: ['controles-filtrados'] });
       queryClient.invalidateQueries({ queryKey: ['reporte-diario'] });
@@ -96,12 +83,8 @@ export function useEliminarControl() {
       if (!actor) throw new Error('Actor no disponible');
       return await actor.eliminarControl(id);
     },
-    onSuccess: async () => {
-      // Immediate invalidation and refetch for next identifier
-      await queryClient.invalidateQueries({ queryKey: ['proximo-identificador'] });
-      await queryClient.refetchQueries({ queryKey: ['proximo-identificador'], type: 'active' });
-      
-      // Invalidate all data queries
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['proximo-identificador'] });
       queryClient.invalidateQueries({ queryKey: ['historial'] });
       queryClient.invalidateQueries({ queryKey: ['controles-filtrados'] });
       queryClient.invalidateQueries({ queryKey: ['reporte-diario'] });
@@ -119,26 +102,16 @@ export function useObtenerHistorial() {
   return useQuery<ControlCalidadConControlador[]>({
     queryKey: ['historial'],
     queryFn: async () => {
-      if (!actor) return [];
-      try {
-        const controles = await actor.obtenerHistorial(BigInt(0), BigInt(10000), null, null);
-        
-        // Sort by date descending, then by lote (time HH:MM:SS) ascending
-        return controles.sort((a, b) => {
-          const fechaDiff = Number(b.control.fecha) - Number(a.control.fecha);
-          if (fechaDiff !== 0) return fechaDiff;
-          
-          // For same date, sort by time string (HH:MM:SS format)
-          return a.control.lote.localeCompare(b.control.lote);
-        });
-      } catch (error) {
-        console.error('Error obteniendo historial:', error);
-        return [];
-      }
+      if (!actor) throw new Error('Actor no disponible');
+      const controles = await actor.obtenerHistorial(BigInt(0), BigInt(10000), null, null);
+      
+      return controles.sort((a, b) => {
+        const fechaDiff = Number(b.control.fecha) - Number(a.control.fecha);
+        if (fechaDiff !== 0) return fechaDiff;
+        return a.control.lote.localeCompare(b.control.lote);
+      });
     },
     enabled: !!actor && !isFetching,
-    staleTime: 60000,
-    gcTime: 600000,
   });
 }
 
@@ -148,23 +121,16 @@ export function useObtenerControlesFiltrados(filtro: Filtro) {
   return useQuery<ControlCalidadConControlador[]>({
     queryKey: ['controles-filtrados', filtro],
     queryFn: async () => {
-      if (!actor) return [];
-      try {
-        const controles = await actor.obtenerControlesFiltrados(filtro);
-        
-        return controles.sort((a, b) => {
-          const fechaDiff = Number(b.control.fecha) - Number(a.control.fecha);
-          if (fechaDiff !== 0) return fechaDiff;
-          return a.control.lote.localeCompare(b.control.lote);
-        });
-      } catch (error) {
-        console.error('Error obteniendo controles filtrados:', error);
-        return [];
-      }
+      if (!actor) throw new Error('Actor no disponible');
+      const controles = await actor.obtenerControlesFiltrados(filtro);
+      
+      return controles.sort((a, b) => {
+        const fechaDiff = Number(b.control.fecha) - Number(a.control.fecha);
+        if (fechaDiff !== 0) return fechaDiff;
+        return a.control.lote.localeCompare(b.control.lote);
+      });
     },
     enabled: !!actor && !isFetching,
-    staleTime: 60000,
-    gcTime: 600000,
   });
 }
 
@@ -174,17 +140,10 @@ export function useObtenerControl(id: string) {
   return useQuery<ControlCalidad | null>({
     queryKey: ['control', id],
     queryFn: async () => {
-      if (!actor) return null;
-      try {
-        return await actor.obtenerControl(id);
-      } catch (error) {
-        console.error('Error obteniendo control:', error);
-        return null;
-      }
+      if (!actor) throw new Error('Actor no disponible');
+      return await actor.obtenerControl(id);
     },
     enabled: !!actor && !isFetching && !!id,
-    staleTime: 120000,
-    gcTime: 600000,
   });
 }
 
@@ -194,25 +153,18 @@ export function useObtenerMuestrasParaPlanilla(fechaInicio: string, fechaFin: st
   return useQuery<MuestraPlanilla[]>({
     queryKey: ['muestras-planilla', fechaInicio, fechaFin],
     queryFn: async () => {
-      if (!actor) return [];
-      try {
-        const fechaInicioSeconds = dateStringToTimestampUTC3(fechaInicio);
-        const fechaFinSeconds = dateStringToTimestampUTC3(fechaFin);
-        const muestras = await actor.obtenerMuestrasParaPlanilla(fechaInicioSeconds, fechaFinSeconds);
-        
-        return muestras.sort((a, b) => {
-          const fechaDiff = Number(b.fecha) - Number(a.fecha);
-          if (fechaDiff !== 0) return fechaDiff;
-          return a.lote.localeCompare(b.lote);
-        });
-      } catch (error) {
-        console.error('Error obteniendo muestras para planilla:', error);
-        return [];
-      }
+      if (!actor) throw new Error('Actor no disponible');
+      const fechaInicioSeconds = dateStringToTimestampUTC3(fechaInicio);
+      const fechaFinSeconds = dateStringToTimestampUTC3(fechaFin);
+      const muestras = await actor.obtenerMuestrasParaPlanilla(fechaInicioSeconds, fechaFinSeconds);
+      
+      return muestras.sort((a, b) => {
+        const fechaDiff = Number(b.fecha) - Number(a.fecha);
+        if (fechaDiff !== 0) return fechaDiff;
+        return a.lote.localeCompare(b.lote);
+      });
     },
     enabled: !!actor && !isFetching && !!fechaInicio && !!fechaFin,
-    staleTime: 60000,
-    gcTime: 600000,
   });
 }
 
@@ -223,16 +175,53 @@ export function useObtenerDetalleMuestra(id: string | null) {
     queryKey: ['detalle-muestra', id],
     queryFn: async () => {
       if (!actor || !id) return null;
-      try {
-        return await actor.obtenerDetalleMuestra(id);
-      } catch (error) {
-        console.error('Error obteniendo detalle de muestra:', error);
-        return null;
-      }
+      return await actor.obtenerDetalleMuestra(id);
     },
     enabled: !!actor && !isFetching && !!id,
-    staleTime: 120000,
-    gcTime: 600000,
+  });
+}
+
+export function useObtenerReporteDiario(fecha: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['reporte-diario', fecha],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor no disponible');
+      const fechaSeconds = dateStringToTimestampUTC3(fecha);
+      return await actor.obtenerReporteDiario(fechaSeconds);
+    },
+    enabled: !!actor && !isFetching && !!fecha,
+  });
+}
+
+export function useObtenerReporteRango(fechaInicio: string, fechaFin: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['reporte-rango', fechaInicio, fechaFin],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor no disponible');
+      const fechaInicioSeconds = dateStringToTimestampUTC3(fechaInicio);
+      const fechaFinSeconds = dateStringToTimestampUTC3(fechaFin);
+      return await actor.obtenerReporteRango(fechaInicioSeconds, fechaFinSeconds);
+    },
+    enabled: !!actor && !isFetching && !!fechaInicio && !!fechaFin,
+  });
+}
+
+export function useObtenerReportesPorRango(fechaInicio: string, fechaFin: string) {
+  const { actor, isFetching } = useActor();
+
+  return useQuery({
+    queryKey: ['reportes-rango', fechaInicio, fechaFin],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor no disponible');
+      const fechaInicioSeconds = dateStringToTimestampUTC3(fechaInicio);
+      const fechaFinSeconds = dateStringToTimestampUTC3(fechaFin);
+      return await actor.obtenerReportesPorRango(fechaInicioSeconds, fechaFinSeconds);
+    },
+    enabled: !!actor && !isFetching && !!fechaInicio && !!fechaFin,
   });
 }
 
@@ -242,28 +231,10 @@ export function useObtenerEmpacadoresActivos() {
   return useQuery<Empacador[]>({
     queryKey: ['empacadores-activos'],
     queryFn: async () => {
-      if (!actor) return [];
-      try {
-        const empacadores = await actor.obtenerEmpacadoresActivos();
-        
-        return empacadores.sort((a, b) => {
-          const aNum = parseInt(a.identificador);
-          const bNum = parseInt(b.identificador);
-          
-          if (!isNaN(aNum) && !isNaN(bNum)) {
-            return aNum - bNum;
-          }
-          
-          return a.identificador.localeCompare(b.identificador, 'es');
-        });
-      } catch (error) {
-        console.error('Error obteniendo empacadores activos:', error);
-        return [];
-      }
+      if (!actor) throw new Error('Actor no disponible');
+      return await actor.obtenerEmpacadoresActivos();
     },
     enabled: !!actor && !isFetching,
-    staleTime: 300000,
-    gcTime: 900000,
   });
 }
 
@@ -274,20 +245,10 @@ export function useAgregarEmpacador() {
   return useMutation({
     mutationFn: async ({ identificador, color }: { identificador: string; color: string }) => {
       if (!actor) throw new Error('Actor no disponible');
-      
-      try {
-        const id = await actor.agregarEmpacador(identificador, color);
-        return id;
-      } catch (error: any) {
-        if (error?.message) {
-          throw new Error(error.message);
-        }
-        throw error;
-      }
+      return await actor.agregarEmpacador(identificador, color);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
     },
   });
 }
@@ -299,20 +260,10 @@ export function useModificarEmpacador() {
   return useMutation({
     mutationFn: async ({ id, nuevoIdentificador, nuevoColor }: { id: string; nuevoIdentificador: string; nuevoColor: string }) => {
       if (!actor) throw new Error('Actor no disponible');
-      
-      try {
-        const resultId = await actor.modificarEmpacador(id, nuevoIdentificador, nuevoColor);
-        return resultId;
-      } catch (error: any) {
-        if (error?.message) {
-          throw new Error(error.message);
-        }
-        throw error;
-      }
+      return await actor.modificarEmpacador(id, nuevoIdentificador, nuevoColor);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
     },
   });
 }
@@ -326,9 +277,8 @@ export function useEliminarEmpacador() {
       if (!actor) throw new Error('Actor no disponible');
       return await actor.eliminarEmpacador(id);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['empacadores-activos'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['empacadores-activos'] });
     },
   });
 }
@@ -339,18 +289,10 @@ export function useObtenerControladoresActivos() {
   return useQuery<Controlador[]>({
     queryKey: ['controladores-activos'],
     queryFn: async () => {
-      if (!actor) return [];
-      try {
-        const controladores = await actor.obtenerControladoresActivos();
-        return controladores.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-      } catch (error) {
-        console.error('Error obteniendo controladores activos:', error);
-        return [];
-      }
+      if (!actor) throw new Error('Actor no disponible');
+      return await actor.obtenerControladoresActivos();
     },
     enabled: !!actor && !isFetching,
-    staleTime: 300000,
-    gcTime: 900000,
   });
 }
 
@@ -361,20 +303,10 @@ export function useAgregarControlador() {
   return useMutation({
     mutationFn: async (nombre: string) => {
       if (!actor) throw new Error('Actor no disponible');
-      
-      try {
-        const id = await actor.agregarControlador(nombre);
-        return id;
-      } catch (error: any) {
-        if (error?.message) {
-          throw new Error(error.message);
-        }
-        throw error;
-      }
+      return await actor.agregarControlador(nombre);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['controladores-activos'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
     },
   });
 }
@@ -386,20 +318,10 @@ export function useModificarControlador() {
   return useMutation({
     mutationFn: async ({ id, nuevoNombre }: { id: string; nuevoNombre: string }) => {
       if (!actor) throw new Error('Actor no disponible');
-      
-      try {
-        const resultId = await actor.modificarControlador(id, nuevoNombre);
-        return resultId;
-      } catch (error: any) {
-        if (error?.message) {
-          throw new Error(error.message);
-        }
-        throw error;
-      }
+      return await actor.modificarControlador(id, nuevoNombre);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['controladores-activos'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
     },
   });
 }
@@ -413,9 +335,8 @@ export function useEliminarControlador() {
       if (!actor) throw new Error('Actor no disponible');
       return await actor.eliminarControlador(id);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
-      await queryClient.refetchQueries({ queryKey: ['controladores-activos'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['controladores-activos'] });
     },
   });
 }
@@ -431,8 +352,6 @@ export function useGetCallerUserProfile() {
     },
     enabled: !!actor && !actorFetching,
     retry: false,
-    staleTime: 180000,
-    gcTime: 600000,
   });
 
   return {
@@ -448,36 +367,27 @@ export function useSaveCallerUserProfile() {
 
   return useMutation({
     mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor no disponible');
-      return await actor.saveCallerUserProfile(profile);
+      if (!actor) throw new Error('Actor not available');
+      return actor.saveCallerUserProfile(profile);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
-      await queryClient.refetchQueries({ queryKey: ['currentUserProfile'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
     },
   });
 }
 
 export function useGetCallerUserRole() {
-  const { actor, isFetching: actorFetching } = useActor();
+  const { actor, isFetching } = useActor();
 
-  const query = useQuery<UserRole>({
+  return useQuery<UserRole>({
     queryKey: ['currentUserRole'],
     queryFn: async () => {
       if (!actor) throw new Error('Actor not available');
       return actor.getCallerUserRole();
     },
-    enabled: !!actor && !actorFetching,
+    enabled: !!actor && !isFetching,
     retry: false,
-    staleTime: 180000,
-    gcTime: 600000,
   });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
 }
 
 export function useGetAllUserRoles() {
@@ -486,32 +396,25 @@ export function useGetAllUserRoles() {
   return useQuery<UserWithRole[]>({
     queryKey: ['allUserRoles'],
     queryFn: async () => {
-      if (!actor) return [];
-      try {
-        return await actor.getAllUserRoles();
-      } catch (error) {
-        console.error('Error obteniendo roles de usuarios:', error);
-        return [];
-      }
+      if (!actor) throw new Error('Actor not available');
+      return actor.getAllUserRoles();
     },
     enabled: !!actor && !isFetching,
-    staleTime: 120000,
-    gcTime: 600000,
   });
 }
 
-export function useAssignUserRole() {
+export function useAssignCallerUserRole() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ user, role }: { user: Principal; role: UserRole }) => {
-      if (!actor) throw new Error('Actor no disponible');
-      return await actor.setUserRole(user, role);
+      if (!actor) throw new Error('Actor not available');
+      return actor.assignCallerUserRole(user, role);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['allUserRoles'] });
-      await queryClient.refetchQueries({ queryKey: ['allUserRoles'], type: 'active' });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allUserRoles'] });
+      queryClient.invalidateQueries({ queryKey: ['currentUserRole'] });
     },
   });
 }

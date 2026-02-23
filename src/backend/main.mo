@@ -11,12 +11,12 @@ import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 import AccessControl "authorization/access-control";
 
-actor Backend {
+actor {
   let storage = Storage.new();
   include MixinStorage(storage);
 
   // Initialize the access control system
-  let accessControlState = AccessControl.initState();
+  var accessControlState = AccessControl.initState();
 
   public type Defecto = {
     #raset;
